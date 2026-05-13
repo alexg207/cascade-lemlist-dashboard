@@ -283,8 +283,30 @@
 </div>
 
 <script>
-const API = window.location.hostname === 'localhost' ? `http://localhost:${location.port || 3100}/api` : '/api';
+const API = '/api';
 const PAGE_SIZE = 25;
+
+// ── Password gate ────────────────────────────────────────────────────────────
+function getKey() { return localStorage.getItem('cascade_dashboard_key') || ''; }
+function setKey(k) { if (k) localStorage.setItem('cascade_dashboard_key', k); else localStorage.removeItem('cascade_dashboard_key'); }
+async function apiFetch(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers || {});
+  const k = getKey();
+  if (k) headers['x-dashboard-key'] = k;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  if (res.status === 401) {
+    const entered = window.prompt('This dashboard is private. Enter access key:');
+    if (entered) {
+      setKey(entered);
+      const retryHeaders = Object.assign({}, opts.headers || {}, { 'x-dashboard-key': entered });
+      const retry = await fetch(path, Object.assign({}, opts, { headers: retryHeaders }));
+      if (retry.status === 401) { setKey(''); throw new Error('Wrong key'); }
+      return retry;
+    }
+    throw new Error('Auth required');
+  }
+  return res;
+}
 let allCampaigns = [];
 let filters = {
   bucket: localStorage.getItem('cascade_f_bucket') || 'all',
@@ -593,7 +615,7 @@ function renderCard(c) {
 // ── Sparkline lazy loading via timeline endpoint ────────────────────────────
 async function fetchTimeline(id) {
   try {
-    const r = await fetch(`${API}/campaigns/${id}/timeline?days=30`);
+    const r = await apiFetch(`${API}/campaigns/${id}/timeline?days=30`);
     if (!r.ok) return null;
     return await r.json();
   } catch { return null; }
@@ -692,14 +714,14 @@ function setLoading(v) {
 async function load() {
   setLoading(true);
   try {
-    const res = await fetch(`${API}/campaigns`);
+    const res = await apiFetch(`${API}/campaigns`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     allCampaigns = (Array.isArray(data) ? data : (data.campaigns || [])).filter(c => !c.archived);
     document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
     render();
   } catch (e) {
-    document.getElementById('gridContainer').innerHTML = `<div class="error">Could not reach the proxy.<code>cd ~/cascade-lemlist-dashboard &amp;&amp; LEMLIST_API_KEY=your_key node server.js</code></div>`;
+    document.getElementById('gridContainer').innerHTML = `<div class="error">${e.message === 'Wrong key' ? 'Wrong access key. <a href="#" onclick="setKey(\\'\\');location.reload();return false">Try again</a>' : 'Could not reach API: ' + e.message}</div>`;
   } finally {
     setLoading(false);
   }
@@ -773,7 +795,7 @@ async function loadLeadsPage() {
   if (!wrap) return;
   wrap.innerHTML = '<div class="table-loading">Loading leads…</div>';
   try {
-    const res = await fetch(`${API}/campaigns/${campaignId}/leads-page?offset=${offset}&limit=${PAGE_SIZE}`);
+    const res = await apiFetch(`${API}/campaigns/${campaignId}/leads-page?offset=${offset}&limit=${PAGE_SIZE}`);
     const data = await res.json();
     const rows = (data.leads || []).map(l => `<tr>
       <td>${statePillHTML(l.state)}</td>
@@ -804,7 +826,7 @@ function changePage(dir) {
 async function loadLateAccepts() {
   const { campaignId } = detailState;
   try {
-    const res = await fetch(`${API}/campaigns/${campaignId}/late-accepts`);
+    const res = await apiFetch(`${API}/campaigns/${campaignId}/late-accepts`);
     if (!res.ok) return;
     const data = await res.json();
     if (!data.lateAccepts || !data.lateAccepts.length) return;

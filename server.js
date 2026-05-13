@@ -96,10 +96,20 @@ function dayKey(iso) {
   return d.toISOString().slice(0, 10);
 }
 
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
+
+function timingSafeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (origin && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Headers', 'x-dashboard-key, content-type');
   }
   res.setHeader('Content-Type', 'application/json');
 
@@ -107,6 +117,16 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const pathname = url.pathname;
+
+  // Password gate for /api/* only (static files load freely so the prompt UI can render)
+  if (DASHBOARD_PASSWORD && pathname.startsWith('/api/')) {
+    const provided = req.headers['x-dashboard-key'] || url.searchParams.get('key') || '';
+    if (!provided || !timingSafeEqual(String(provided), DASHBOARD_PASSWORD)) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'unauthorized' }));
+      return;
+    }
+  }
 
   try {
     // GET /api/campaigns — list w/ stats
