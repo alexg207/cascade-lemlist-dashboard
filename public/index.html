@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cascade Lemlist Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Geist:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f1ea;
+    --paper: #fff;
+    --ink: #111827;
+    --ink-2: #374151;
+    --mute: #6b7280;
+    --mute-2: #9ca3af;
+    --line: #e5e1d6;
+    --line-2: #ece8de;
+    --tint: #fafaf3;
+    --blue: #1d4ed8;
+    --green: #047857;
+    --purple: #6d28d9;
+    --red: #b91c1c;
+    --amber: #b45309;
+    --teal: #0f766e;
+    --rose: #be185d;
+    --cascade: #134e4a;
+  }
+  body { font-family: 'DM Sans', -apple-system, sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+  a { color: inherit; }
+
+  /* ── Header ── */
+  header { padding: 18px 40px; border-bottom: 1px solid var(--line); background: var(--paper); display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .brand { display: flex; align-items: baseline; gap: 14px; }
+  .brand h1 { font-family: 'Geist', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand .tag { font-size: 11px; color: var(--mute-2); text-transform: uppercase; letter-spacing: 0.1em; }
+  .header-collab { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .collab-primary, .collab-cascade { font-family: 'EB Garamond', Georgia, serif; font-size: 28px; font-weight: 500; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+  .collab-cascade { color: var(--cascade); }
+  .collab-times { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; color: var(--mute-2); margin: 0 14px; }
+  .header-meta { font-size: 12px; color: var(--mute-2); font-family: 'Geist', sans-serif; }
+
+  /* ── Toolbar ── */
+  .toolbar { padding: 16px 40px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--paper); border-bottom: 1px solid var(--line); }
+  button { background: var(--ink); color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: background 0.12s; }
+  button:hover { background: #1f2937; }
+  button:disabled { background: #e5e7eb; color: var(--mute-2); cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--tint); color: var(--ink); }
+  .spinner { width: 11px; height: 11px; border: 1.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .loading .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid var(--line); background: var(--paper); border-radius: 999px; font-size: 12px; color: var(--ink-2); cursor: pointer; transition: all 0.12s; user-select: none; }
+  .chip:hover { background: var(--tint); }
+  .chip.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .chip .count { font-family: 'Geist', sans-serif; font-size: 10px; color: var(--mute-2); }
+  .chip.active .count { color: rgba(255,255,255,0.7); }
+
+  #lastUpdated { font-size: 11px; color: var(--mute-2); padding: 8px 40px 0; font-family: 'Geist', sans-serif; }
+
+  /* ── Top summary band ── */
+  .summary { padding: 24px 40px 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .summary-card { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .summary-card .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); font-weight: 600; margin-bottom: 8px; }
+  .summary-card .value { font-family: 'Geist', sans-serif; font-size: 30px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; line-height: 1; }
+  .summary-card .sub { font-size: 11px; color: var(--mute); margin-top: 6px; font-family: 'Geist', sans-serif; }
+
+  /* ── A/B comparison ── */
+  .ab-section { padding: 20px 40px 4px; }
+  .section-title { font-family: 'Geist', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--mute); font-weight: 600; margin-bottom: 12px; }
+  .ab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 16px; }
+  .ab-bucket { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .ab-bucket .bucket-name { font-family: 'EB Garamond', Georgia, serif; font-size: 22px; color: var(--cascade); font-weight: 500; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .ab-bucket .bucket-sub { font-size: 11px; color: var(--mute-2); margin-bottom: 14px; font-family: 'Geist', sans-serif; }
+  .ab-split { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: stretch; }
+  .ab-side { padding: 12px; background: var(--tint); border: 1px solid var(--line-2); border-radius: 8px; }
+  .ab-side .v-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .ab-side .v-sender { font-size: 10px; color: var(--mute-2); font-family: 'Geist', sans-serif; }
+  .ab-side .v-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ab-side .v-metric .vm-n { font-family: 'Geist', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .ab-side .v-metric .vm-l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); font-weight: 600; margin-top: 2px; }
+  .ab-side.direct { border-color: #d1fae5; background: #f0fdf4; }
+  .ab-side.direct .vm-n { color: var(--green); }
+  .ab-side.advisory { border-color: #fde68a; background: #fffbeb; }
+  .ab-side.advisory .vm-n { color: var(--amber); }
+  .ab-vs { display: flex; align-items: center; justify-content: center; font-family: 'EB Garamond', Georgia, serif; font-size: 20px; color: var(--mute-2); padding: 0 4px; }
+  .ab-winner { margin-top: 12px; padding: 8px 12px; background: var(--tint); border-radius: 6px; font-size: 11px; color: var(--ink-2); font-family: 'Geist', sans-serif; display: flex; justify-content: space-between; }
+  .ab-winner strong { font-weight: 600; }
+  .ab-empty { padding: 16px; text-align: center; color: var(--mute-2); font-size: 12px; }
+
+  /* ── Cards grid (big) ── */
+  .cards-section { padding: 20px 40px 40px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 18px; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s; }
+  .card:hover { box-shadow: 0 8px 24px rgba(17, 24, 39, 0.06); border-color: #d6d1c4; transform: translateY(-1px); }
+  .card-top { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 14px; }
+  .card-title { font-family: 'Geist', sans-serif; font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 14px; }
+
+  /* Pills/badges */
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 999px; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.4; }
+  .pill.bucket-hs   { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; }
+  .pill.bucket-co   { background: #fdf4ff; color: #86198f; border: 1px solid #f5d0fe; }
+  .pill.bucket-ot   { background: #f3f4f6; color: var(--mute); border: 1px solid #e5e7eb; }
+  .pill.variant-direct   { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .pill.variant-advisory { background: #fffbeb; color: var(--amber); border: 1px solid #fde68a; }
+  .pill.channel-li { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+  .pill.channel-em { background: #f9fafb; color: var(--ink-2); border: 1px solid #e5e7eb; }
+  .pill.status-running, .pill.status-active { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .pill.status-paused  { background: #f9fafb; color: var(--mute); border: 1px solid #e5e7eb; }
+  .pill.status-draft   { background: #f5f3ff; color: var(--purple); border: 1px solid #ede9fe; }
+  .pill.status-ended   { background: #fff7ed; color: var(--amber); border: 1px solid #fed7aa; }
+  .pill.status-stopped { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+
+  /* Hero metrics row */
+  .hero-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; margin-bottom: 18px; padding: 16px; background: var(--tint); border: 1px solid var(--line-2); border-radius: 9px; }
+  .hero-metric { text-align: left; }
+  .hero-metric .hm-l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--mute-2); font-weight: 600; margin-bottom: 6px; }
+  .hero-metric .hm-n { font-family: 'Geist', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.025em; line-height: 1; }
+  .hero-metric .hm-sub { font-size: 11px; color: var(--mute); margin-top: 5px; font-family: 'Geist', sans-serif; }
+  .hero-metric.headline .hm-n { font-size: 38px; color: var(--green); }
+  .hero-metric.headline.warn .hm-n { color: var(--amber); }
+  .hero-metric.headline.poor .hm-n { color: var(--red); }
+
+  /* Funnel */
+  .funnel { margin-bottom: 16px; }
+  .funnel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .funnel-head .ft { font-family: 'Geist', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); font-weight: 600; }
+  .funnel-head .fp { font-size: 11px; color: var(--mute-2); font-family: 'Geist', sans-serif; }
+  .funnel-rows { display: flex; flex-direction: column; gap: 5px; }
+  .funnel-row { display: grid; grid-template-columns: 86px 1fr 88px; gap: 10px; align-items: center; }
+  .fr-label { font-size: 11px; color: var(--mute); font-weight: 500; }
+  .fr-bar-wrap { height: 18px; background: #f3f0e7; border-radius: 4px; overflow: hidden; position: relative; }
+  .fr-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .fr-num { text-align: right; font-family: 'Geist', sans-serif; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .fr-num .pct { color: var(--mute-2); font-weight: 500; margin-left: 6px; }
+  .fr-bar.sent     { background: linear-gradient(90deg, #cbd5e1, #94a3b8); }
+  .fr-bar.opened   { background: linear-gradient(90deg, #bfdbfe, #2563eb); }
+  .fr-bar.clicked  { background: linear-gradient(90deg, #ddd6fe, #7c3aed); }
+  .fr-bar.replied  { background: linear-gradient(90deg, #bbf7d0, #059669); }
+  .fr-bar.bounced  { background: linear-gradient(90deg, #fecaca, #dc2626); }
+  .fr-bar.li-sent     { background: linear-gradient(90deg, #c7d2fe, #4f46e5); }
+  .fr-bar.li-accepted { background: linear-gradient(90deg, #fcd34d, #d97706); }
+  .fr-bar.li-replied  { background: linear-gradient(90deg, #bbf7d0, #047857); }
+
+  .li-section { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line-2); }
+
+  /* Sparkline */
+  .spark-section { margin-bottom: 16px; }
+  .spark-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .spark-head .ft { font-family: 'Geist', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); font-weight: 600; }
+  .spark-head .fl { font-size: 10px; color: var(--mute-2); font-family: 'Geist', sans-serif; }
+  .spark-head .legend { display: inline-flex; gap: 8px; }
+  .spark-head .legend-item { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--mute); }
+  .spark-head .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .spark { width: 100%; height: 60px; display: block; }
+  .spark-empty { font-size: 11px; color: var(--mute-2); padding: 14px 0; text-align: center; font-style: italic; }
+
+  /* Recent replies/accepts */
+  .recent-section { margin-top: 6px; }
+  .recent-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .recent-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #fafaf3; border: 1px solid var(--line-2); border-radius: 5px; font-size: 12px; }
+  .recent-row.reply { background: #f0fdf4; border-color: #d1fae5; }
+  .recent-row.accept { background: #fff7ed; border-color: #fed7aa; }
+  .recent-who { font-weight: 500; color: var(--ink); }
+  .recent-co { color: var(--mute); font-size: 11px; margin-left: 6px; }
+  .recent-when { font-family: 'Geist', sans-serif; font-size: 10px; color: var(--mute-2); }
+  .recent-empty { font-size: 11px; color: var(--mute-2); padding: 8px 0; text-align: center; font-style: italic; }
+
+  /* Card footer */
+  .card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-2); font-family: 'Geist', sans-serif; font-size: 11px; color: var(--mute-2); }
+  .card-foot .ds { display: flex; gap: 12px; }
+
+  /* Empty state */
+  .empty { padding: 80px 40px; text-align: center; color: var(--mute-2); font-size: 14px; }
+  .error { padding: 40px; text-align: center; color: var(--red); }
+  .error code { display: block; margin: 12px auto 0; max-width: 600px; font-size: 12px; background: var(--paper); border: 1px solid var(--line); padding: 14px; border-radius: 6px; color: var(--mute); text-align: left; font-family: 'Geist', monospace; }
+
+  /* Detail panel */
+  .detail-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.35); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .detail-overlay.open { opacity: 1; pointer-events: all; }
+  .detail-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(920px, 100vw); background: var(--paper); border-left: 1px solid var(--line); z-index: 101; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), width 0.25s cubic-bezier(0.4,0,0.2,1); overflow-y: auto; display: flex; flex-direction: column; }
+  .detail-panel.open { transform: translateX(0); }
+  .detail-panel.fullscreen { width: 100vw; border-left: none; }
+  .detail-header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; position: sticky; top: 0; background: var(--paper); z-index: 10; }
+  .detail-title { font-family: 'Geist', sans-serif; font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; line-height: 1.4; }
+  .detail-close { background: none; border: none; color: var(--mute-2); cursor: pointer; padding: 4px; font-size: 18px; border-radius: 4px; }
+  .detail-close:hover { background: var(--tint); color: var(--ink-2); }
+  .detail-body { padding: 18px 24px 32px; }
+
+  /* Lead table */
+  .lead-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .lead-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); font-weight: 600; padding: 0 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .lead-table td { padding: 10px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+  .lead-table tr:hover td { background: var(--tint); }
+  .lead-name { font-weight: 500; }
+  .lead-email { color: var(--mute); font-family: 'Geist', sans-serif; font-size: 11px; }
+  .lead-title-c { color: var(--mute); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .state-pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 3px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em; }
+  .sp-emailsSent           { background: #f3f4f6; color: var(--mute); }
+  .sp-emailsOpened         { background: #eff6ff; color: var(--blue); }
+  .sp-emailsClicked        { background: #f5f3ff; color: var(--purple); }
+  .sp-emailsReplied        { background: #f0fdf4; color: var(--green); }
+  .sp-emailsBounced        { background: #fef2f2; color: var(--red); }
+  .sp-linkedinInviteDone   { background: #eff6ff; color: #0284c7; }
+  .sp-linkedinInviteAccepted { background: #fff7ed; color: #d97706; }
+  .sp-linkedinReplied      { background: #f0fdf4; color: var(--green); }
+  .sp-default              { background: #f3f4f6; color: var(--mute); }
+  .table-pager { display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-family: 'Geist', sans-serif; font-size: 12px; color: var(--mute); margin-top: 12px; }
+  .pager-btn { background: var(--paper); border: 1px solid var(--line); padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; color: var(--ink-2); }
+  .pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pager-btn:hover:not(:disabled) { background: var(--tint); }
+  .detail-section { margin-bottom: 20px; }
+  .detail-section h3 { font-family: 'Geist', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); font-weight: 600; margin-bottom: 10px; }
+  .table-loading { padding: 40px; text-align: center; color: var(--mute-2); font-size: 13px; }
+
+  /* Late accepts */
+  .late-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .late-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #fed7aa; background: #fffbf5; }
+  .late-table td { padding: 8px 10px; border-bottom: 1px solid #fff1e0; }
+  .late-days { font-family: 'Geist', sans-serif; font-weight: 600; color: var(--amber); }
+
+  /* Detail funnel */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+  .stat-box { background: var(--tint); border: 1px solid var(--line-2); border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-box .n { font-family: 'Geist', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat-box .l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); margin-top: 3px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Cascade Outbound</h1>
+    <span class="tag">Lemlist analytics</span>
+  </div>
+  <div class="header-collab">
+    <span class="collab-primary">Primary</span>
+    <span class="collab-times">×</span>
+    <span class="collab-cascade">Cascade Health</span>
+  </div>
+  <span class="header-meta" id="campaignCount"></span>
+</header>
+
+<div class="toolbar">
+  <button id="refreshBtn" onclick="load()">
+    <div class="spinner" id="spinner"></div>
+    <span id="btnText">Refresh</span>
+  </button>
+  <div class="filter-chips" id="bucketChips"></div>
+  <div class="filter-chips" id="variantChips"></div>
+  <div class="filter-chips" id="statusChips"></div>
+  <div style="flex:1"></div>
+  <button class="btn-ghost" onclick="toggleABView()" id="abToggle">A/B view: on</button>
+</div>
+
+<div id="lastUpdated"></div>
+<div class="summary" id="summary"></div>
+<div class="ab-section" id="abSection"></div>
+<div class="cards-section">
+  <div class="section-title">Campaigns</div>
+  <div id="gridContainer"></div>
+</div>
+
+<div class="detail-overlay" id="overlay" onclick="closeDetail()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div>
+      <div class="detail-title" id="detailTitle"></div>
+      <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap" id="detailBadges"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="detail-close" onclick="toggleFullscreen()" title="Full screen">⛶</button>
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+    </div>
+  </div>
+  <div class="detail-body" id="detailBody">
+    <div class="table-loading">Loading…</div>
+  </div>
+</div>
+
+<script>
+const API = window.location.hostname === 'localhost' ? `http://localhost:${location.port || 3100}/api` : '/api';
+const PAGE_SIZE = 25;
+let allCampaigns = [];
+let filters = {
+  bucket: localStorage.getItem('cascade_f_bucket') || 'all',
+  variant: localStorage.getItem('cascade_f_variant') || 'all',
+  status: localStorage.getItem('cascade_f_status') || 'all',
+};
+let abView = localStorage.getItem('cascade_abview') !== 'off';
+let detailState = { campaignId: null, offset: 0, timeline: null };
+
+// ── Classification ───────────────────────────────────────────────────────────
+function classify(c) {
+  const n = (c.name || '').toLowerCase();
+  let bucket = 'other', variant = 'other', channel = 'email', sender = '';
+  if (/health\s*system|hospital|amc|cfo|coo|hs\b/.test(n)) bucket = 'health-systems';
+  else if (/community\s*onc|comm\s*onc|practice|oncology\s*practice|co\b/.test(n)) bucket = 'community-onc';
+  else if (/clinical|hematolog|service\s*line|bmt|cellular/.test(n)) bucket = 'clinical-leaders';
+  else if (/pharma/.test(n)) bucket = 'pharma';
+
+  if (/advisory|alex|primary|portfolio/.test(n)) { variant = 'advisory'; sender = 'Alex (Primary)'; }
+  else if (/direct|kate|cascade\s*(sender|outbound)/.test(n) || /kate/.test(n)) { variant = 'direct'; sender = 'Kate (Cascade)'; }
+
+  if (/linkedin|li\b/.test(n) && /email/.test(n)) channel = 'multi';
+  else if (/linkedin|li\b/.test(n)) channel = 'linkedin';
+  else channel = 'email';
+
+  return { bucket, variant, channel, sender };
+}
+
+const BUCKET_LABELS = {
+  'all': 'All buckets',
+  'health-systems': 'Health Systems',
+  'community-onc': 'Community Onc',
+  'clinical-leaders': 'Clinical Leaders',
+  'pharma': 'Pharma',
+  'other': 'Other',
+};
+const VARIANT_LABELS = { 'all': 'Both variants', 'direct': 'Direct (Kate)', 'advisory': 'Advisory (Alex)', 'other': 'Untagged' };
+const STATUS_LABELS = { 'all': 'All status', 'running': 'Running', 'paused': 'Paused', 'draft': 'Draft', 'ended': 'Ended' };
+
+function getStatus(c) { return (c.scheduleStatus || c.status || 'unknown').toLowerCase(); }
+function isActive(c) { const s = getStatus(c); return s === 'running' || s === 'active' || s === 'inprogress'; }
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+function pct(n, total, digits = 1) {
+  if (!total || total === 0) return '—';
+  return (n / total * 100).toFixed(digits) + '%';
+}
+function fmtDate(iso) { if (!iso) return '—'; return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.round(ms / 60000), h = Math.round(m / 60), d = Math.round(h / 24);
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (d < 30) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function extractStats(c) {
+  const s = c.statistics || {};
+  return {
+    total: s.total || 0, sent: s.sent || 0, opened: s.opened || 0, clicked: s.clicked || 0,
+    replied: s.replied || 0, bounced: s.bounced || 0, progress: s.progress || 0,
+    liInviteDone: s.liInviteDone || 0, liAccepted: s.liAccepted || 0, liReplied: s.liReplied || 0,
+    unsubscribed: s.unsubscribed || 0,
+  };
+}
+function statePillHTML(state) {
+  const labels = {
+    emailsSent: 'Sent', emailsOpened: 'Opened', emailsClicked: 'Clicked',
+    emailsReplied: 'Replied', emailsBounced: 'Bounced',
+    linkedinInviteDone: 'LI Sent', linkedinInviteAccepted: 'LI Accepted',
+    linkedinReplied: 'LI Replied', reviewed: 'Queued',
+  };
+  return `<span class="state-pill sp-${state || 'default'}">${labels[state] || state || '—'}</span>`;
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+function buildChips() {
+  const counts = { bucket: {}, variant: {}, status: {} };
+  for (const c of allCampaigns) {
+    const cls = classify(c);
+    counts.bucket[cls.bucket] = (counts.bucket[cls.bucket] || 0) + 1;
+    counts.variant[cls.variant] = (counts.variant[cls.variant] || 0) + 1;
+    const st = getStatus(c);
+    counts.status[st] = (counts.status[st] || 0) + 1;
+  }
+  const renderChips = (id, dim, options, labels) => {
+    const html = ['all', ...options].map(key => {
+      const active = filters[dim] === key ? 'active' : '';
+      const label = labels[key] || key;
+      const n = key === 'all' ? allCampaigns.length : (counts[dim][key] || 0);
+      if (key !== 'all' && n === 0) return '';
+      return `<span class="chip ${active}" onclick="setFilter('${dim}','${key}')">${label} <span class="count">${n}</span></span>`;
+    }).join('');
+    document.getElementById(id).innerHTML = html;
+  };
+  renderChips('bucketChips', 'bucket', ['health-systems', 'community-onc', 'clinical-leaders', 'pharma', 'other'], BUCKET_LABELS);
+  renderChips('variantChips', 'variant', ['direct', 'advisory', 'other'], VARIANT_LABELS);
+  renderChips('statusChips', 'status', ['running', 'paused', 'draft', 'ended'], STATUS_LABELS);
+}
+function setFilter(dim, key) {
+  filters[dim] = key;
+  localStorage.setItem('cascade_f_' + dim, key);
+  buildChips();
+  render();
+}
+function filtered() {
+  return allCampaigns.filter(c => {
+    const cls = classify(c);
+    if (filters.bucket !== 'all' && cls.bucket !== filters.bucket) return false;
+    if (filters.variant !== 'all' && cls.variant !== filters.variant) return false;
+    if (filters.status !== 'all' && getStatus(c) !== filters.status) return false;
+    return true;
+  });
+}
+
+function toggleABView() {
+  abView = !abView;
+  localStorage.setItem('cascade_abview', abView ? 'on' : 'off');
+  document.getElementById('abToggle').textContent = `A/B view: ${abView ? 'on' : 'off'}`;
+  render();
+}
+
+// ── A/B comparison module ────────────────────────────────────────────────────
+function renderABSection() {
+  if (!abView) { document.getElementById('abSection').innerHTML = ''; return; }
+  const buckets = ['health-systems', 'community-onc', 'clinical-leaders', 'pharma'];
+  const present = buckets.filter(b => allCampaigns.some(c => classify(c).bucket === b));
+  if (!present.length) { document.getElementById('abSection').innerHTML = ''; return; }
+
+  const blocks = present.map(b => {
+    const variants = ['direct', 'advisory'];
+    const data = {};
+    for (const v of variants) {
+      const cams = allCampaigns.filter(c => { const cl = classify(c); return cl.bucket === b && cl.variant === v; });
+      const agg = { sent: 0, opened: 0, replied: 0, total: 0, n: cams.length, sender: '' };
+      cams.forEach(c => {
+        const s = extractStats(c);
+        agg.sent += s.sent; agg.opened += s.opened; agg.replied += s.replied; agg.total += s.total;
+        if (!agg.sender) agg.sender = classify(c).sender;
+      });
+      agg.replyRate = agg.sent ? agg.replied / agg.sent * 100 : 0;
+      agg.openRate = agg.sent ? agg.opened / agg.sent * 100 : 0;
+      data[v] = agg;
+    }
+    const noData = !data.direct.n && !data.advisory.n;
+    if (noData) return '';
+
+    const winner = data.direct.replyRate > data.advisory.replyRate ? 'Direct' : (data.advisory.replyRate > data.direct.replyRate ? 'Advisory' : '—');
+    const diff = Math.abs(data.direct.replyRate - data.advisory.replyRate).toFixed(1);
+
+    const sideHTML = (v, label) => {
+      const d = data[v];
+      if (!d.n) return `<div class="ab-side ${v}"><div class="v-label"><span>${label}</span></div><div class="ab-empty">No campaign yet</div></div>`;
+      return `<div class="ab-side ${v}">
+        <div class="v-label"><span>${label}</span><span class="v-sender">${d.sender || ''} · ${d.n} camp</span></div>
+        <div class="v-metrics">
+          <div class="v-metric"><div class="vm-n">${d.replyRate.toFixed(1)}%</div><div class="vm-l">Reply rate</div></div>
+          <div class="v-metric"><div class="vm-n">${d.openRate.toFixed(0)}%</div><div class="vm-l">Open rate</div></div>
+          <div class="v-metric"><div class="vm-n">${d.replied}</div><div class="vm-l">Replies</div></div>
+          <div class="v-metric"><div class="vm-n">${d.sent.toLocaleString()}</div><div class="vm-l">Touched</div></div>
+        </div>
+      </div>`;
+    };
+
+    return `<div class="ab-bucket">
+      <div class="bucket-name">${BUCKET_LABELS[b]}</div>
+      <div class="bucket-sub">${(data.direct.n + data.advisory.n)} campaigns · ${(data.direct.total + data.advisory.total).toLocaleString()} leads</div>
+      <div class="ab-split">
+        ${sideHTML('direct', 'A · Direct (Kate)')}
+        <div class="ab-vs">vs</div>
+        ${sideHTML('advisory', 'B · Advisory (Alex)')}
+      </div>
+      <div class="ab-winner">
+        <span>Reply-rate edge</span>
+        <span><strong>${winner}</strong> by ${diff} pts</span>
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  document.getElementById('abSection').innerHTML = `<div class="section-title">Direct vs Advisory — by bucket</div><div class="ab-grid">${blocks}</div>`;
+}
+
+// ── Summary ──────────────────────────────────────────────────────────────────
+function renderSummary(cams) {
+  let total = 0, sent = 0, opened = 0, replied = 0, liDone = 0, liAcc = 0, liRep = 0;
+  cams.forEach(c => {
+    const s = extractStats(c);
+    total += s.total; sent += s.sent; opened += s.opened; replied += s.replied;
+    liDone += s.liInviteDone; liAcc += s.liAccepted; liRep += s.liReplied;
+  });
+  const replyRate = sent ? (replied / sent * 100).toFixed(1) + '%' : '—';
+  const openRate = sent ? (opened / sent * 100).toFixed(1) + '%' : '—';
+  const liAccRate = liDone ? (liAcc / liDone * 100).toFixed(0) + '%' : '—';
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card"><div class="label">Leads in flight</div><div class="value">${total.toLocaleString()}</div><div class="sub">${cams.length} campaigns</div></div>
+    <div class="summary-card"><div class="label">Touched</div><div class="value">${sent.toLocaleString()}</div><div class="sub">${pct(sent, total)} of universe</div></div>
+    <div class="summary-card"><div class="label">Reply rate</div><div class="value" style="color:var(--green)">${replyRate}</div><div class="sub">${replied} replies</div></div>
+    <div class="summary-card"><div class="label">Open rate</div><div class="value" style="color:var(--blue)">${openRate}</div></div>
+    <div class="summary-card"><div class="label">LI accepts</div><div class="value" style="color:var(--amber)">${liAcc}</div><div class="sub">${liAccRate} accept rate</div></div>
+    <div class="summary-card"><div class="label">LI replies</div><div class="value" style="color:var(--teal)">${liRep}</div></div>
+  `;
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────────
+function funnelRow(label, n, total, cls) {
+  const p = total ? (n / total * 100) : 0;
+  const barW = Math.min(100, Math.max(0, p));
+  return `<div class="funnel-row">
+    <div class="fr-label">${label}</div>
+    <div class="fr-bar-wrap"><div class="fr-bar ${cls}" style="width:${barW}%"></div></div>
+    <div class="fr-num">${n.toLocaleString()}<span class="pct">${total ? p.toFixed(1) + '%' : ''}</span></div>
+  </div>`;
+}
+
+function heroQuality(rate) {
+  // Reply-rate-based: good >5%, ok 2-5%, poor <2%
+  if (rate >= 5) return '';
+  if (rate >= 2) return 'warn';
+  return 'poor';
+}
+
+function renderCard(c) {
+  const cls = classify(c);
+  const s = extractStats(c);
+  const replyRate = s.sent ? (s.replied / s.sent * 100) : 0;
+  const openRate = s.sent ? (s.opened / s.sent * 100) : 0;
+  const status = getStatus(c);
+
+  const hasLI = s.liInviteDone > 0 || cls.channel === 'linkedin' || cls.channel === 'multi';
+  const liSection = hasLI ? `<div class="li-section">
+    ${funnelRow('LI sent', s.liInviteDone, s.liInviteDone, 'li-sent')}
+    ${funnelRow('LI accepts', s.liAccepted, s.liInviteDone, 'li-accepted')}
+    ${funnelRow('LI replies', s.liReplied, s.liInviteDone, 'li-replied')}
+  </div>` : '';
+
+  const escapedName = (c.name || 'Unnamed').replace(/'/g, "\\'");
+  const variantPill = cls.variant !== 'other' ? `<span class="pill variant-${cls.variant}">${cls.variant === 'direct' ? 'A · Direct' : 'B · Advisory'}</span>` : '';
+  const bucketPill = cls.bucket !== 'other' ? `<span class="pill bucket-${cls.bucket === 'health-systems' ? 'hs' : (cls.bucket === 'community-onc' ? 'co' : 'ot')}">${BUCKET_LABELS[cls.bucket]}</span>` : '';
+  const channelPill = cls.channel === 'linkedin' ? `<span class="pill channel-li">LinkedIn</span>` : (cls.channel === 'multi' ? `<span class="pill channel-li">LI + Email</span>` : `<span class="pill channel-em">Email</span>`);
+  const statusPill = `<span class="pill status-${status}">${status}</span>`;
+
+  return `<div class="card" onclick="openDetail('${c._id}','${escapedName}','${status}')">
+    <div class="card-top">
+      ${bucketPill}${variantPill}${channelPill}${statusPill}
+      ${cls.sender ? `<span style="font-size:11px;color:var(--mute-2);font-family:'Geist',sans-serif;margin-left:6px">${cls.sender}</span>` : ''}
+    </div>
+    <div class="card-title">${c.name || 'Unnamed'}</div>
+
+    <div class="hero-row">
+      <div class="hero-metric headline ${heroQuality(replyRate)}">
+        <div class="hm-l">Reply rate</div>
+        <div class="hm-n">${s.sent ? replyRate.toFixed(1) + '%' : '—'}</div>
+        <div class="hm-sub">${s.replied} replies · ${s.sent.toLocaleString()} sent</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hm-l">Reached</div>
+        <div class="hm-n">${Math.round(s.progress * 100)}%</div>
+        <div class="hm-sub">${s.total.toLocaleString()} leads</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hm-l">Open rate</div>
+        <div class="hm-n" style="color:var(--blue)">${s.sent ? openRate.toFixed(0) + '%' : '—'}</div>
+        <div class="hm-sub">${s.opened.toLocaleString()} opens</div>
+      </div>
+    </div>
+
+    <div class="funnel">
+      <div class="funnel-head"><span class="ft">Email funnel</span><span class="fp">${s.sent.toLocaleString()} touched</span></div>
+      <div class="funnel-rows">
+        ${funnelRow('Sent', s.sent, s.sent, 'sent')}
+        ${funnelRow('Opened', s.opened, s.sent, 'opened')}
+        ${funnelRow('Clicked', s.clicked, s.sent, 'clicked')}
+        ${funnelRow('Replied', s.replied, s.sent, 'replied')}
+        ${funnelRow('Bounced', s.bounced, s.sent, 'bounced')}
+      </div>
+      ${liSection}
+    </div>
+
+    <div class="spark-section" data-spark-for="${c._id}">
+      <div class="spark-head">
+        <span class="ft">Last 30 days</span>
+        <span class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#94a3b8"></span>Sent</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#059669"></span>Replied</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span>LI accepts</span>
+        </span>
+      </div>
+      <div class="spark-empty">Click to load timeline →</div>
+    </div>
+
+    <div class="card-foot">
+      <div class="ds">
+        <span>Created ${fmtDate(c.createdAt)}</span>
+        ${s.unsubscribed ? `<span>${s.unsubscribed} unsubs</span>` : ''}
+        ${s.bounced ? `<span style="color:var(--red)">${s.bounced} bounces</span>` : ''}
+      </div>
+      <span>Click for detail →</span>
+    </div>
+  </div>`;
+}
+
+// ── Sparkline lazy loading via timeline endpoint ────────────────────────────
+async function fetchTimeline(id) {
+  try {
+    const r = await fetch(`${API}/campaigns/${id}/timeline?days=30`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+function drawSpark(container, timeline) {
+  if (!timeline || !timeline.length) { container.innerHTML = `<div class="spark-empty">No recent activity</div>`; return; }
+  const W = 520, H = 60, P = 6;
+  const days = timeline;
+  const maxSent = Math.max(1, ...days.map(d => d.sent));
+  const maxRep  = Math.max(1, ...days.map(d => d.replied + d.liReplied));
+  const maxAcc  = Math.max(1, ...days.map(d => d.liAccepted));
+  const ymax = Math.max(maxSent, maxRep * 4, maxAcc * 4);
+  const xStep = (W - P * 2) / Math.max(1, days.length - 1);
+
+  const pathFor = (key, multi) => {
+    return days.map((d, i) => {
+      const v = (multi ? (d[key] + (d[multi] || 0)) : d[key]);
+      const x = P + i * xStep;
+      const y = H - P - (v / ymax) * (H - P * 2);
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  };
+
+  const bars = days.map((d, i) => {
+    const x = P + i * xStep - 1.5;
+    const h = (d.sent / ymax) * (H - P * 2);
+    const y = H - P - h;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="3" height="${Math.max(0.5, h).toFixed(1)}" fill="#cbd5e1" opacity="0.55" rx="1"/>`;
+  }).join('');
+
+  container.innerHTML = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${bars}
+    <path d="${pathFor('replied', 'liReplied')}" stroke="#059669" stroke-width="1.6" fill="none" />
+    <path d="${pathFor('liAccepted')}" stroke="#d97706" stroke-width="1.4" fill="none" stroke-dasharray="2 2" />
+  </svg>`;
+}
+
+async function loadAllSparks() {
+  const sections = document.querySelectorAll('[data-spark-for]');
+  // Throttle: 3 in parallel
+  const ids = [...sections].map(s => s.dataset.sparkFor);
+  const queue = ids.slice();
+  const work = async () => {
+    while (queue.length) {
+      const id = queue.shift();
+      const t = await fetchTimeline(id);
+      const node = document.querySelector(`[data-spark-for="${id}"]`);
+      if (!node) continue;
+      const replies = (t && t.recentReplies) || [];
+      const accepts = (t && t.recentAccepts) || [];
+      drawSpark(node, t && t.timeline);
+
+      // Append recent activity rows under sparkline
+      const recent = replies.slice(0, 3).map(r => `<div class="recent-row reply">
+        <span><span class="recent-who">${[r.firstName, r.lastName].filter(Boolean).join(' ') || r.email || '(unknown)'}</span><span class="recent-co">${r.company || ''}</span></span>
+        <span class="recent-when">${timeAgo(r.createdAt)} · ${r.type === 'linkedinReplied' ? 'LI' : 'email'}</span>
+      </div>`).join('');
+      const acceptRows = accepts.slice(0, 2).map(r => `<div class="recent-row accept">
+        <span><span class="recent-who">${[r.firstName, r.lastName].filter(Boolean).join(' ') || '(unknown)'}</span><span class="recent-co">${r.company || ''}</span></span>
+        <span class="recent-when">${timeAgo(r.createdAt)} · LI accept</span>
+      </div>`).join('');
+      if (recent || acceptRows) {
+        const wrap = document.createElement('div');
+        wrap.className = 'recent-section';
+        wrap.innerHTML = `<div class="recent-list">${recent}${acceptRows}</div>`;
+        node.appendChild(wrap);
+      }
+    }
+  };
+  await Promise.all([work(), work(), work()]);
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  buildChips();
+  const cams = filtered().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  document.getElementById('campaignCount').textContent = `${cams.length} of ${allCampaigns.length} campaigns`;
+  renderSummary(cams);
+  renderABSection();
+
+  if (!cams.length) {
+    document.getElementById('gridContainer').innerHTML = `<div class="empty">No campaigns match the current filters.<br><br>Tip: name campaigns <code style="background:var(--tint);padding:2px 6px;border-radius:3px">Cascade — &lt;Bucket&gt; — &lt;Variant&gt; — &lt;Channel&gt;</code> so they're auto-classified.</div>`;
+    return;
+  }
+  document.getElementById('gridContainer').innerHTML = `<div class="grid">${cams.map(renderCard).join('')}</div>`;
+  loadAllSparks();
+}
+
+// ── Load campaigns ──────────────────────────────────────────────────────────
+function setLoading(v) {
+  document.getElementById('refreshBtn').disabled = v;
+  document.getElementById('refreshBtn').classList.toggle('loading', v);
+  document.getElementById('btnText').textContent = v ? 'Loading…' : 'Refresh';
+}
+async function load() {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API}/campaigns`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allCampaigns = (Array.isArray(data) ? data : (data.campaigns || [])).filter(c => !c.archived);
+    document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    render();
+  } catch (e) {
+    document.getElementById('gridContainer').innerHTML = `<div class="error">Could not reach the proxy.<code>cd ~/cascade-lemlist-dashboard &amp;&amp; LEMLIST_API_KEY=your_key node server.js</code></div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Detail panel ────────────────────────────────────────────────────────────
+function openDetail(id, name, status) {
+  detailState = { campaignId: id, offset: 0, timeline: null };
+  document.getElementById('detailTitle').textContent = name;
+  const c = allCampaigns.find(x => x._id === id);
+  const cls = c ? classify(c) : { bucket: 'other', variant: 'other', channel: 'email' };
+  const badges = [];
+  if (cls.bucket !== 'other') badges.push(`<span class="pill bucket-${cls.bucket === 'health-systems' ? 'hs' : (cls.bucket === 'community-onc' ? 'co' : 'ot')}">${BUCKET_LABELS[cls.bucket]}</span>`);
+  if (cls.variant !== 'other') badges.push(`<span class="pill variant-${cls.variant}">${cls.variant === 'direct' ? 'A · Direct' : 'B · Advisory'}</span>`);
+  badges.push(`<span class="pill status-${status}">${status}</span>`);
+  document.getElementById('detailBadges').innerHTML = badges.join(' ');
+  document.getElementById('detailBody').innerHTML = '<div class="table-loading">Loading…</div>';
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadDetail();
+}
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('detailPanel').classList.remove('open', 'fullscreen');
+  document.body.style.overflow = '';
+}
+function toggleFullscreen() {
+  const panel = document.getElementById('detailPanel');
+  panel.classList.toggle('fullscreen');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+async function loadDetail() {
+  const { campaignId } = detailState;
+  const c = allCampaigns.find(x => x._id === campaignId);
+  if (!c) return;
+  const s = extractStats(c);
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-section">
+      <h3>Funnel</h3>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="n" style="color:#374151">${s.total.toLocaleString()}</div><div class="l">Leads</div></div>
+        <div class="stat-box"><div class="n" style="color:#6b7280">${s.sent.toLocaleString()}</div><div class="l">Touched</div></div>
+        <div class="stat-box"><div class="n" style="color:var(--blue)">${s.opened.toLocaleString()}</div><div class="l">Opens</div></div>
+        <div class="stat-box"><div class="n" style="color:var(--purple)">${s.clicked.toLocaleString()}</div><div class="l">Clicks</div></div>
+        <div class="stat-box"><div class="n" style="color:var(--green)">${s.replied.toLocaleString()}</div><div class="l">Replies</div></div>
+        <div class="stat-box"><div class="n" style="color:var(--red)">${s.bounced.toLocaleString()}</div><div class="l">Bounces</div></div>
+        ${s.liInviteDone ? `<div class="stat-box"><div class="n" style="color:#4f46e5">${s.liInviteDone}</div><div class="l">LI sent</div></div>` : ''}
+        ${s.liAccepted ? `<div class="stat-box"><div class="n" style="color:var(--amber)">${s.liAccepted}</div><div class="l">LI accepts</div></div>` : ''}
+      </div>
+    </div>
+    <div class="detail-section">
+      <h3>Leads</h3>
+      <div id="leadsTableWrap"><div class="table-loading">Loading leads…</div></div>
+    </div>
+    <div class="detail-section" id="lateSection" style="display:none">
+      <h3>Late LinkedIn accepts (&gt;3 days)</h3>
+      <div id="lateWrap"></div>
+    </div>
+  `;
+
+  loadLeadsPage();
+  loadLateAccepts();
+}
+
+async function loadLeadsPage() {
+  const { campaignId, offset } = detailState;
+  const wrap = document.getElementById('leadsTableWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="table-loading">Loading leads…</div>';
+  try {
+    const res = await fetch(`${API}/campaigns/${campaignId}/leads-page?offset=${offset}&limit=${PAGE_SIZE}`);
+    const data = await res.json();
+    const rows = (data.leads || []).map(l => `<tr>
+      <td>${statePillHTML(l.state)}</td>
+      <td><div class="lead-name">${l.fullName || [l.firstName, l.lastName].filter(Boolean).join(' ') || '—'}</div>${l.email ? `<div class="lead-email">${l.email}</div>` : ''}</td>
+      <td class="lead-title-c">${l.jobTitle || '—'}</td>
+      <td>${l.company || '—'}</td>
+      <td>${l.linkedinUrl ? `<a href="${l.linkedinUrl}" target="_blank" style="color:var(--blue);font-size:11px">LI →</a>` : '—'}</td>
+    </tr>`).join('');
+    const pageEnd = Math.min(data.offset + data.limit, data.total);
+    wrap.innerHTML = `<table class="lead-table">
+      <thead><tr><th>State</th><th>Name</th><th>Title</th><th>Company</th><th>LI</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--mute-2)">No leads</td></tr>'}</tbody>
+    </table>
+    <div class="table-pager">
+      <span>${data.offset + 1}–${pageEnd} of ${data.total}</span>
+      <button class="pager-btn" ${data.offset === 0 ? 'disabled' : ''} onclick="changePage(-1)">‹ Prev</button>
+      <button class="pager-btn" ${pageEnd >= data.total ? 'disabled' : ''} onclick="changePage(1)">Next ›</button>
+    </div>`;
+  } catch (e) {
+    wrap.innerHTML = `<div class="error">${e.message}</div>`;
+  }
+}
+function changePage(dir) {
+  detailState.offset = Math.max(0, detailState.offset + dir * PAGE_SIZE);
+  loadLeadsPage();
+}
+
+async function loadLateAccepts() {
+  const { campaignId } = detailState;
+  try {
+    const res = await fetch(`${API}/campaigns/${campaignId}/late-accepts`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.lateAccepts || !data.lateAccepts.length) return;
+    document.getElementById('lateSection').style.display = '';
+    const rows = data.lateAccepts.map(a => `<tr>
+      <td><strong>${a.fullName || [a.firstName, a.lastName].filter(Boolean).join(' ') || '—'}</strong></td>
+      <td>${a.jobTitle || '—'}</td>
+      <td>${a.company || '—'}</td>
+      <td>${fmtDate(a.inviteSent)}</td>
+      <td>${fmtDate(a.acceptedOn)}</td>
+      <td class="late-days">${a.daysToAccept}d</td>
+      <td>${a.linkedinUrl ? `<a href="${a.linkedinUrl}" target="_blank" style="color:var(--blue);font-size:11px">LI →</a>` : ''}</td>
+    </tr>`).join('');
+    document.getElementById('lateWrap').innerHTML = `<table class="late-table">
+      <thead><tr><th>Name</th><th>Title</th><th>Company</th><th>Invite sent</th><th>Accepted</th><th>Gap</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch {}
+}
+
+load();
+</script>
+</body>
+</html>
