@@ -298,16 +298,18 @@ let detailState = { campaignId: null, offset: 0, timeline: null };
 function classify(c) {
   const n = (c.name || '').toLowerCase();
   let bucket = 'other', variant = 'other', channel = 'email', sender = '';
-  if (/health\s*system|hospital|amc|cfo|coo|hs\b/.test(n)) bucket = 'health-systems';
-  else if (/community\s*onc|comm\s*onc|practice|oncology\s*practice|co\b/.test(n)) bucket = 'community-onc';
-  else if (/clinical|hematolog|service\s*line|bmt|cellular/.test(n)) bucket = 'clinical-leaders';
+
+  // Clinical leaders first — "cancer service line / cell therapy" should win over "health system"
+  if (/clinical|hematolog|service\s*line|bmt|cellular|cell\s*therapy|cancer\s*service/.test(n)) bucket = 'clinical-leaders';
+  else if (/community\s*onc|comm\s*onc|independent\s*oncology|oncology\s*practice|practice/.test(n)) bucket = 'community-onc';
+  else if (/health\s*system|healthcare|hospital|amc|cfo|coo|finance\s*leader|health\s*sys/.test(n)) bucket = 'health-systems';
   else if (/pharma/.test(n)) bucket = 'pharma';
 
-  if (/advisory|alex|primary|portfolio/.test(n)) { variant = 'advisory'; sender = 'Alex (Primary)'; }
-  else if (/direct|kate|cascade\s*(sender|outbound)/.test(n) || /kate/.test(n)) { variant = 'direct'; sender = 'Kate (Cascade)'; }
+  if (/advisory|alex|primary|portfolio|investor/.test(n)) { variant = 'advisory'; sender = 'Alex (Primary)'; }
+  else if (/founder|direct|kate|cascade\s*(sender|outbound)/.test(n)) { variant = 'direct'; sender = 'Kate (Cascade)'; }
 
-  if (/linkedin|li\b/.test(n) && /email/.test(n)) channel = 'multi';
-  else if (/linkedin|li\b/.test(n)) channel = 'linkedin';
+  if (/linkedin/.test(n) && /email/.test(n)) channel = 'multi';
+  else if (/linkedin/.test(n)) channel = 'linkedin';
   else channel = 'email';
 
   return { bucket, variant, channel, sender };

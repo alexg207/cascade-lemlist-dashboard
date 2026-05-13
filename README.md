@@ -29,13 +29,13 @@ Example campaign names:
 - `Cascade — Community Onc — Direct (Kate) — LI + Email`
 - `Cascade — Clinical Leaders — Advisory (Alex) — Email`
 
-Server filters campaigns whose name contains `cascade` or `chorus` (the rebrand domain). If nothing matches, it falls back to all campaigns in the workspace.
+The Lemlist API key for this dashboard is **team-scoped to the Cascade Health workspace** (`tea_pCguuTj4E8vruZ6ej`), so every campaign returned by the API belongs to Cascade — no name-based filtering needed server-side. Auto-classification chips are name-driven for the in-app filters.
 
 ## Run locally
 
 ```bash
 cd ~/cascade-lemlist-dashboard
-export LEMLIST_API_KEY=your_key_here
+export LEMLIST_API_KEY=<cascade-team-key>
 node server.js
 ```
 

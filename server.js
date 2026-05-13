@@ -113,9 +113,8 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/campaigns') {
       const result = await lemlist('/campaigns');
       const campaigns = Array.isArray(result) ? result : (result.campaigns || []);
-      const filtered = campaigns.filter(c => (c.name || '').toLowerCase().includes('cascade')
-        || (c.name || '').toLowerCase().includes('chorus'));
-      const list = filtered.length ? filtered : campaigns;
+      // API key is scoped to Cascade Health team — show every campaign.
+      const list = campaigns;
 
       const BATCH = 3;
       const withStats = [];
