@@ -198,6 +198,47 @@
   .loading-state .ls-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--line); border-top-color: var(--cascade); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 14px; }
   .loading-state .ls-text { font-size: 13px; color: var(--mute); font-family: 'Geist', sans-serif; }
 
+  /* Page tabs */
+  .page-nav { padding: 0 40px; display: flex; gap: 0; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .page-nav-tab { padding: 12px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--mute); cursor: pointer; border: none; border-bottom: 2px solid transparent; background: none; border-radius: 0; transition: color 0.12s, border-color 0.12s; }
+  .page-nav-tab:hover { color: var(--ink); background: none; }
+  .page-nav-tab.active { color: var(--ink); border-bottom-color: var(--cascade); font-weight: 600; }
+  .tab-badge { display: inline-block; background: var(--cascade); color: #fff; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 8px; margin-left: 6px; min-width: 16px; text-align: center; font-family: 'Geist', sans-serif; }
+  .tab-badge.zero { display: none; }
+
+  /* Replies page */
+  .replies-container { padding: 24px 40px 40px; }
+  .replies-loading { text-align: center; padding: 60px; color: var(--mute-2); font-size: 13px; }
+  .replies-summary { display: flex; gap: 12px; margin-bottom: 18px; align-items: baseline; }
+  .replies-count { font-family: 'Geist', sans-serif; font-size: 30px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+  .replies-label { font-size: 13px; color: var(--mute); }
+  .replies-filters { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .replies-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .replies-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mute-2); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--tint); }
+  .replies-table td { padding: 10px 14px; border-bottom: 1px solid var(--line-2); vertical-align: middle; }
+  .replies-table tr:last-child td { border-bottom: none; }
+  .replies-table tr:hover td { background: var(--tint); }
+  .rep-type { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.02em; white-space: nowrap; }
+  .rep-type.email { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+  .rep-type.linkedin { background: #f0fdf4; color: var(--green); border: 1px solid #d1fae5; }
+  .rep-name { font-weight: 500; color: var(--ink); }
+  .rep-email { color: var(--mute); font-family: 'Geist', sans-serif; font-size: 11px; }
+  .rep-co { color: var(--ink-2); }
+  .rep-title { color: var(--mute); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rep-campaign { color: var(--blue); cursor: pointer; font-size: 11px; }
+  .rep-campaign:hover { text-decoration: underline; }
+  .rep-date { font-family: 'Geist', sans-serif; font-size: 11px; color: var(--mute-2); white-space: nowrap; }
+  .replies-empty { padding: 60px; text-align: center; color: var(--mute-2); font-size: 13px; }
+
+  /* Drag-reorder */
+  .card { position: relative; }
+  .card[draggable="true"] { cursor: grab; }
+  .card.dragging { opacity: 0.4; }
+  .card.drag-over { box-shadow: 0 0 0 2px var(--cascade); }
+  .drag-handle { position: absolute; top: 14px; right: 14px; color: var(--mute-2); font-size: 18px; cursor: grab; user-select: none; padding: 4px 6px; border-radius: 4px; line-height: 1; opacity: 0; transition: opacity 0.15s; }
+  .card:hover .drag-handle { opacity: 1; }
+  .drag-handle:hover { background: var(--tint); color: var(--ink-2); }
+
   /* Detail panel */
   .detail-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.35); z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .detail-overlay.open { opacity: 1; pointer-events: all; }
@@ -278,6 +319,12 @@
   <span class="header-meta" id="campaignCount"></span>
 </header>
 
+<div class="page-nav">
+  <button class="page-nav-tab active" onclick="switchPage('campaigns')" id="tabCampaigns">Campaigns</button>
+  <button class="page-nav-tab" onclick="switchPage('replies')" id="tabReplies">Replies<span class="tab-badge zero" id="replyBadge">0</span></button>
+</div>
+
+<div id="campaignsPage">
 <div class="toolbar">
   <button id="refreshBtn" onclick="load()">
     <div class="spinner" id="spinner"></div>
@@ -287,6 +334,7 @@
   <div class="filter-chips" id="variantChips"></div>
   <div class="filter-chips" id="statusChips"></div>
   <div style="flex:1"></div>
+  <button class="btn-ghost" onclick="resetOrder()" id="resetOrderBtn" style="display:none">Reset order</button>
   <button class="btn-ghost" onclick="toggleABView()" id="abToggle">A/B view: on</button>
 </div>
 
@@ -294,8 +342,16 @@
 <div class="summary" id="summary"></div>
 <div class="ab-section" id="abSection"></div>
 <div class="cards-section">
-  <div class="section-title">Campaigns</div>
+  <div class="section-title">Campaigns <span style="font-weight:400;color:var(--mute-2);text-transform:none;letter-spacing:0;font-size:10px;margin-left:8px">drag cards to reorder</span></div>
   <div id="gridContainer"></div>
+</div>
+</div><!-- /campaignsPage -->
+
+<div id="repliesPage" style="display:none">
+  <div class="replies-container">
+    <div class="replies-loading" id="repliesLoading">Loading replies…</div>
+    <div id="repliesContent" style="display:none"></div>
+  </div>
 </div>
 
 <div class="detail-overlay" id="overlay" onclick="closeDetail()"></div>
@@ -520,7 +576,7 @@ function renderABSection() {
         <div class="v-label"><span>${label}</span><span class="v-sender">${d.sender || ''} · ${d.n} camp</span></div>
         <div class="v-metrics">
           <div class="v-metric"><div class="vm-n">${d.replyRate.toFixed(1)}%</div><div class="vm-l">Reply rate</div></div>
-          <div class="v-metric"><div class="vm-n">${d.openRate.toFixed(0)}%</div><div class="vm-l">Open rate</div></div>
+          <div class="v-metric"><div class="vm-n">${d.openRate.toFixed(1)}%</div><div class="vm-l">Open rate</div></div>
           <div class="v-metric"><div class="vm-n">${d.replied}</div><div class="vm-l">Replies</div></div>
           <div class="v-metric"><div class="vm-n">${d.sent.toLocaleString()}</div><div class="vm-l">Touched</div></div>
         </div>
@@ -605,7 +661,8 @@ function renderCard(c) {
   const channelPill = cls.channel === 'linkedin' ? `<span class="pill channel-li">LinkedIn</span>` : (cls.channel === 'multi' ? `<span class="pill channel-li">LI + Email</span>` : `<span class="pill channel-em">Email</span>`);
   const statusPill = `<span class="pill status-${status}">${status}</span>`;
 
-  return `<div class="card" onclick="openDetail('${c._id}','${escapedName}','${status}')">
+  return `<div class="card" data-cid="${c._id}" draggable="true" onclick="if(!event.target.closest('.drag-handle')) openDetail('${c._id}','${escapedName}','${status}')">
+    <div class="drag-handle" title="Drag to reorder" onmousedown="event.stopPropagation()">⋮⋮</div>
     <div class="card-top">
       ${bucketPill}${variantPill}${channelPill}${statusPill}
       ${cls.sender ? `<span style="font-size:11px;color:var(--mute-2);font-family:'Geist',sans-serif;margin-left:6px">${cls.sender}</span>` : ''}
@@ -625,7 +682,7 @@ function renderCard(c) {
       </div>
       <div class="hero-metric">
         <div class="hm-l">Open rate</div>
-        <div class="hm-n" style="color:var(--blue)">${s.sent ? openRate.toFixed(0) + '%' : '—'}</div>
+        <div class="hm-n" style="color:var(--blue)">${s.sent ? openRate.toFixed(1) + '%' : '—'}</div>
         <div class="hm-sub">${s.opened.toLocaleString()} opens</div>
       </div>
     </div>
@@ -742,19 +799,110 @@ async function loadAllSparks() {
   await Promise.all([work(), work(), work()]);
 }
 
+// ── Card ordering (drag + active-first default) ──────────────────────────────
+const STATUS_RANK = { running: 0, active: 0, inprogress: 0, paused: 1, draft: 2, ended: 3, stopped: 4, unknown: 9 };
+function getCardOrder() {
+  try { return JSON.parse(localStorage.getItem('cascade_card_order') || '[]'); }
+  catch { return []; }
+}
+function setCardOrder(ids) {
+  localStorage.setItem('cascade_card_order', JSON.stringify(ids));
+  document.getElementById('resetOrderBtn').style.display = ids.length ? '' : 'none';
+}
+function resetOrder() {
+  localStorage.removeItem('cascade_card_order');
+  document.getElementById('resetOrderBtn').style.display = 'none';
+  render();
+}
+function sortCards(cams) {
+  const order = getCardOrder();
+  if (order.length) {
+    const idx = new Map(order.map((id, i) => [id, i]));
+    return [...cams].sort((a, b) => {
+      const ai = idx.has(a._id) ? idx.get(a._id) : Infinity;
+      const bi = idx.has(b._id) ? idx.get(b._id) : Infinity;
+      if (ai !== bi) return ai - bi;
+      // Both unranked → status-first, then date
+      const sa = STATUS_RANK[getStatus(a)] ?? 9;
+      const sb = STATUS_RANK[getStatus(b)] ?? 9;
+      if (sa !== sb) return sa - sb;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+  }
+  // Default: active first, then status rank, then most-recent
+  return [...cams].sort((a, b) => {
+    const sa = STATUS_RANK[getStatus(a)] ?? 9;
+    const sb = STATUS_RANK[getStatus(b)] ?? 9;
+    if (sa !== sb) return sa - sb;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+}
+
+let dragSrcId = null;
+function onCardDragStart(e, id) {
+  dragSrcId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', id); } catch {}
+}
+function onCardDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.card.drag-over').forEach(n => n.classList.remove('drag-over'));
+  dragSrcId = null;
+}
+function onCardDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget;
+  if (!target.classList.contains('drag-over')) {
+    document.querySelectorAll('.card.drag-over').forEach(n => n.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  }
+}
+function onCardDrop(e, targetId) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.querySelectorAll('.card.drag-over').forEach(n => n.classList.remove('drag-over'));
+  if (!dragSrcId || dragSrcId === targetId) return;
+
+  // Build new order: take current visible order, move src before target
+  const visible = [...document.querySelectorAll('.card[data-cid]')].map(n => n.dataset.cid);
+  const srcIdx = visible.indexOf(dragSrcId);
+  const tgtIdx = visible.indexOf(targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  visible.splice(srcIdx, 1);
+  visible.splice(tgtIdx, 0, dragSrcId);
+
+  // Merge into full order: visible cards in new order + any others (filtered out) appended
+  const fullExisting = getCardOrder();
+  const newOrder = [...visible];
+  for (const id of fullExisting) if (!newOrder.includes(id)) newOrder.push(id);
+  setCardOrder(newOrder);
+  render();
+}
+
 // ── Render ───────────────────────────────────────────────────────────────────
 function render() {
   buildChips();
-  const cams = filtered().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const cams = sortCards(filtered());
   document.getElementById('campaignCount').textContent = `${cams.length} of ${allCampaigns.length} campaigns`;
   renderSummary(cams);
   renderABSection();
+  document.getElementById('resetOrderBtn').style.display = getCardOrder().length ? '' : 'none';
 
   if (!cams.length) {
     document.getElementById('gridContainer').innerHTML = `<div class="empty">No campaigns match the current filters.<br><br>Tip: name campaigns <code style="background:var(--tint);padding:2px 6px;border-radius:3px">Cascade — &lt;Bucket&gt; — &lt;Variant&gt; — &lt;Channel&gt;</code> so they're auto-classified.</div>`;
     return;
   }
   document.getElementById('gridContainer').innerHTML = `<div class="grid">${cams.map(renderCard).join('')}</div>`;
+  // Wire drag handlers
+  document.querySelectorAll('.card[data-cid]').forEach(node => {
+    const id = node.dataset.cid;
+    node.addEventListener('dragstart', e => onCardDragStart(e, id));
+    node.addEventListener('dragend', onCardDragEnd);
+    node.addEventListener('dragover', onCardDragOver);
+    node.addEventListener('drop', e => onCardDrop(e, id));
+  });
   loadAllSparks();
 }
 
@@ -901,6 +1049,97 @@ async function loadLateAccepts() {
       <tbody>${rows}</tbody>
     </table>`;
   } catch {}
+}
+
+// ── Tabs ────────────────────────────────────────────────────────────────────
+let repliesData = null;
+let repliesFilter = 'all';
+function switchPage(page) {
+  document.getElementById('campaignsPage').style.display = page === 'campaigns' ? '' : 'none';
+  document.getElementById('repliesPage').style.display = page === 'replies' ? '' : 'none';
+  document.getElementById('tabCampaigns').classList.toggle('active', page === 'campaigns');
+  document.getElementById('tabReplies').classList.toggle('active', page === 'replies');
+  if (page === 'replies' && !repliesData) loadReplies();
+}
+
+async function loadReplies() {
+  document.getElementById('repliesLoading').style.display = '';
+  document.getElementById('repliesContent').style.display = 'none';
+  try {
+    const res = await apiFetch(`${API}/replies`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    repliesData = await res.json();
+    renderReplies();
+  } catch (e) {
+    if (e.message !== 'Auth required') {
+      document.getElementById('repliesLoading').innerHTML = `<div class="error">Could not load replies: ${e.message}</div>`;
+    }
+  }
+}
+
+function setRepliesFilter(f) {
+  repliesFilter = f;
+  renderReplies();
+}
+
+function renderReplies() {
+  if (!repliesData) return;
+  const all = repliesData.replies || [];
+  const counts = { all: all.length, email: 0, linkedin: 0 };
+  all.forEach(r => { counts[r.replyType] = (counts[r.replyType] || 0) + 1; });
+
+  const badge = document.getElementById('replyBadge');
+  badge.textContent = counts.all;
+  badge.classList.toggle('zero', counts.all === 0);
+
+  const filtered = repliesFilter === 'all' ? all : all.filter(r => r.replyType === repliesFilter);
+
+  const chip = (key, label) => `<span class="chip ${repliesFilter === key ? 'active' : ''}" onclick="setRepliesFilter('${key}')">${label} <span class="count">${counts[key] || 0}</span></span>`;
+
+  document.getElementById('repliesLoading').style.display = 'none';
+  const content = document.getElementById('repliesContent');
+  content.style.display = '';
+
+  if (!all.length) {
+    content.innerHTML = `<div class="replies-empty">No replies yet across ${repliesData.totalCampaigns} campaigns.</div>`;
+    return;
+  }
+
+  const rows = filtered.map(r => {
+    const name = r.fullName || [r.firstName, r.lastName].filter(Boolean).join(' ') || '(unknown)';
+    return `<tr>
+      <td><span class="rep-type ${r.replyType}">${r.replyType === 'email' ? 'Email' : 'LinkedIn'}</span></td>
+      <td><div class="rep-name">${name}</div>${r.email ? `<div class="rep-email">${r.email}</div>` : ''}</td>
+      <td class="rep-title">${r.jobTitle || '—'}</td>
+      <td class="rep-co">${r.company || '—'}</td>
+      <td><span class="rep-campaign" onclick="openDetailFromReplies('${r.campaignId}')">${r.campaignName || '—'}</span></td>
+      <td>${r.linkedinUrl ? `<a href="${r.linkedinUrl}" target="_blank" style="color:var(--blue);font-size:11px">LI →</a>` : ''}</td>
+      <td class="rep-date">${timeAgo(r.date)}</td>
+    </tr>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="replies-summary">
+      <span class="replies-count">${counts.all}</span>
+      <span class="replies-label">replies across ${repliesData.totalCampaigns} campaigns</span>
+    </div>
+    <div class="replies-filters">
+      ${chip('all', 'All')}
+      ${chip('email', 'Email')}
+      ${chip('linkedin', 'LinkedIn')}
+    </div>
+    <table class="replies-table">
+      <thead><tr><th>Type</th><th>Name</th><th>Title</th><th>Company</th><th>Campaign</th><th>LI</th><th>When</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--mute-2)">No replies match filter.</td></tr>'}</tbody>
+    </table>
+  `;
+}
+
+function openDetailFromReplies(campaignId) {
+  const c = allCampaigns.find(x => x._id === campaignId);
+  if (!c) { switchPage('campaigns'); return; }
+  switchPage('campaigns');
+  openDetail(c._id, c.name || 'Unnamed', getStatus(c));
 }
 
 if (!getKey()) {
