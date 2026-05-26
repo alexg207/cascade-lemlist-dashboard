@@ -1,4 +1,4 @@
-const { lemlist, allLeads, aggregateStats } = require('../lib/lemlist');
+const { lemlist, allLeads, allActivitiesAllTypes, aggregateStatsFromActivities } = require('../lib/lemlist');
 const { setCors } = require('../lib/cors');
 const { checkAuth } = require('../lib/auth');
 
@@ -18,8 +18,8 @@ module.exports = async (req, res) => {
       const batch = campaigns.slice(i, i + BATCH);
       const results = await Promise.all(batch.map(async (c) => {
         try {
-          const leads = await allLeads(c._id);
-          return { ...c, statistics: aggregateStats(leads) };
+          const [leads, activities] = await Promise.all([allLeads(c._id), allActivitiesAllTypes(c._id)]);
+          return { ...c, statistics: aggregateStatsFromActivities(activities, leads) };
         } catch (e) {
           console.error(`Stats failed for ${c._id}: ${e.message}`);
           return c;

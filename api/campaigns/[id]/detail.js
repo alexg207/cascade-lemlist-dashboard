@@ -1,4 +1,4 @@
-const { lemlist, allLeads, aggregateStats } = require('../../../lib/lemlist');
+const { lemlist, allLeads, allActivitiesAllTypes, aggregateStatsFromActivities } = require('../../../lib/lemlist');
 const { setCors } = require('../../../lib/cors');
 const { checkAuth } = require('../../../lib/auth');
 
@@ -10,11 +10,12 @@ module.exports = async (req, res) => {
 
   const id = req.query.id;
   try {
-    const [campaign, leads] = await Promise.all([
+    const [campaign, leads, activities] = await Promise.all([
       lemlist(`/campaigns/${id}`),
       allLeads(id),
+      allActivitiesAllTypes(id),
     ]);
-    res.status(200).json({ campaign, stats: aggregateStats(leads), leads });
+    res.status(200).json({ campaign, stats: aggregateStatsFromActivities(activities, leads), leads });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

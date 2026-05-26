@@ -66,6 +66,55 @@ async function allActivities(campaignId, type) {
   return all;
 }
 
+async function allActivitiesAllTypes(campaignId) {
+  const LIMIT = 100;
+  let all = [], offset = 0;
+  while (true) {
+    const page = await lemlist(`/activities?version=v2&campaignId=${campaignId}&limit=${LIMIT}&offset=${offset}`);
+    if (!Array.isArray(page) || page.length === 0) break;
+    all = all.concat(page);
+    if (page.length < LIMIT) break;
+    offset += LIMIT;
+    if (offset > 10000) break;
+  }
+  return all;
+}
+
+function aggregateStatsFromActivities(activities, leads) {
+  const total = leads.length;
+  const counts = {};
+  const uniqueByType = {};
+  for (const a of activities) {
+    const t = a.type;
+    counts[t] = (counts[t] || 0) + 1;
+    if (a.leadId) {
+      if (!uniqueByType[t]) uniqueByType[t] = new Set();
+      uniqueByType[t].add(a.leadId);
+    }
+  }
+  const contactedLeads = new Set();
+  for (const t of ['emailsSent', 'linkedinInviteDone', 'linkedinInviteAccepted', 'linkedinSent', 'linkedinReplied']) {
+    if (uniqueByType[t]) for (const id of uniqueByType[t]) contactedLeads.add(id);
+  }
+  const byState = {};
+  leads.forEach(l => { byState[l.state] = (byState[l.state] || 0) + 1; });
+  return {
+    total,
+    contacted: contactedLeads.size,
+    progress: total > 0 ? contactedLeads.size / total : 0,
+    sent: counts.emailsSent || 0,
+    opened: counts.emailsOpened || 0,
+    clicked: counts.emailsClicked || 0,
+    replied: (counts.emailsReplied || 0) + (counts.linkedinReplied || 0),
+    bounced: counts.emailsBounced || 0,
+    liInviteDone: counts.linkedinInviteDone || 0,
+    liAccepted: counts.linkedinInviteAccepted || 0,
+    liReplied: counts.linkedinReplied || 0,
+    unsubscribed: counts.unsubscribed || 0,
+    byState,
+  };
+}
+
 const CONTACTED = ['emailsSent', 'emailsOpened', 'emailsClicked', 'emailsReplied',
   'emailsBounced', 'linkedinInviteDone', 'linkedinInviteAccepted', 'linkedinReplied'];
 
@@ -142,8 +191,8 @@ const server = http.createServer(async (req, res) => {
         const batch = list.slice(i, i + BATCH);
         const results = await Promise.all(batch.map(async (c) => {
           try {
-            const leads = await allLeads(c._id);
-            return { ...c, statistics: aggregateStats(leads) };
+            const [leads, activities] = await Promise.all([allLeads(c._id), allActivitiesAllTypes(c._id)]);
+            return { ...c, statistics: aggregateStatsFromActivities(activities, leads) };
           } catch (e) {
             console.error(`Stats failed for ${c._id}: ${e.message}`);
             return c;
@@ -226,11 +275,12 @@ const server = http.createServer(async (req, res) => {
     // GET /api/campaigns/:id/detail — campaign + leads + stats
     } else if (pathname.match(/^\/api\/campaigns\/[^/]+\/detail$/)) {
       const id = pathname.split('/')[3];
-      const [campaign, leads] = await Promise.all([
+      const [campaign, leads, activities] = await Promise.all([
         lemlist(`/campaigns/${id}`),
         allLeads(id),
+        allActivitiesAllTypes(id),
       ]);
-      const stats = aggregateStats(leads);
+      const stats = aggregateStatsFromActivities(activities, leads);
       res.writeHead(200);
       res.end(JSON.stringify({ campaign, stats, leads }));
 
