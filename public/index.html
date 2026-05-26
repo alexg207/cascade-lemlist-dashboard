@@ -617,8 +617,8 @@ function renderSummary(cams) {
     <div class="summary-card"><div class="label">Leads in flight</div><div class="value">${total.toLocaleString()}</div><div class="sub">${cams.length} campaigns</div></div>
     <div class="summary-card"><div class="label">Touched</div><div class="value">${sent.toLocaleString()}</div><div class="sub">${pct(sent, total)} of universe</div></div>
     <div class="summary-card"><div class="label">Reply rate</div><div class="value" style="color:var(--green)">${replyRate}</div><div class="sub">${replied} replies</div></div>
-    <div class="summary-card"><div class="label">Open rate</div><div class="value" style="color:var(--blue)">${openRate}</div></div>
     <div class="summary-card"><div class="label">LI accepts</div><div class="value" style="color:var(--amber)">${liAcc}</div><div class="sub">${liAccRate} accept rate</div></div>
+    <div class="summary-card"><div class="label">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels before delivery. Open rate is systematically undercounted - use reply rate and LI accepts as primary signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div><div class="value" style="color:var(--mute-2)">${openRate}</div><div class="sub">pixel-blocked</div></div>
     <div class="summary-card"><div class="label">LI replies</div><div class="value" style="color:var(--teal)">${liRep}</div></div>
   `;
 }
@@ -646,6 +646,7 @@ function renderCard(c) {
   const s = extractStats(c);
   const replyRate = s.sent ? (s.replied / s.sent * 100) : 0;
   const openRate = s.sent ? (s.opened / s.sent * 100) : 0;
+  const liAcceptRate = s.liInviteDone ? (s.liAccepted / s.liInviteDone * 100) : 0;
   const status = getStatus(c);
 
   const hasLI = s.liInviteDone > 0 || cls.channel === 'linkedin' || cls.channel === 'multi';
@@ -680,11 +681,15 @@ function renderCard(c) {
         <div class="hm-n">${Math.round(s.progress * 100)}%</div>
         <div class="hm-sub">${s.total.toLocaleString()} leads</div>
       </div>
-      <div class="hero-metric">
-        <div class="hm-l">Open rate</div>
-        <div class="hm-n" style="color:var(--blue)">${s.sent ? openRate.toFixed(1) + '%' : '—'}</div>
-        <div class="hm-sub">${s.opened.toLocaleString()} opens</div>
-      </div>
+      ${hasLI ? `<div class="hero-metric">
+        <div class="hm-l">LI accept rate</div>
+        <div class="hm-n" style="color:var(--blue)">${s.liInviteDone ? liAcceptRate.toFixed(1) + '%' : '—'}</div>
+        <div class="hm-sub">${s.liAccepted} of ${s.liInviteDone} invites</div>
+      </div>` : `<div class="hero-metric">
+        <div class="hm-l">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels — opens are systematically undercounted. Reply rate and LI accepts are more reliable signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div>
+        <div class="hm-n" style="color:var(--mute-2)">${s.sent ? openRate.toFixed(1) + '%' : '—'}</div>
+        <div class="hm-sub">${s.opened.toLocaleString()} opens · pixel-blocked</div>
+      </div>`}
     </div>
 
     <div class="funnel">
