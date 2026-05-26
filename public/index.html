@@ -299,6 +299,11 @@
   .campaign-menu-row:hover { background: var(--tint); }
   .campaign-menu-row input { cursor: pointer; flex-shrink: 0; }
   .campaign-menu-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Filters dropdown */
+  #filterMenu { width: 300px; }
+  .filter-menu-group { padding: 8px; border-bottom: 1px solid var(--line); }
+  .filter-menu-group:last-child { border-bottom: none; }
+  .filter-menu-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--mute-2); font-weight: 600; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -341,9 +346,6 @@
     <div class="spinner" id="spinner"></div>
     <span id="btnText">Refresh</span>
   </button>
-  <div class="filter-chips" id="bucketChips"></div>
-  <div class="filter-chips" id="variantChips"></div>
-  <div class="filter-chips" id="statusChips"></div>
   <div class="campaign-select" id="campaignSelectWrap">
     <button class="btn-ghost" onclick="toggleCampaignMenu()" id="campaignSelectBtn">Campaigns ▾</button>
     <div class="campaign-menu" id="campaignMenu" style="display:none">
@@ -357,9 +359,17 @@
       <div id="campaignMenuList"></div>
     </div>
   </div>
+  <div class="campaign-select" id="filterMenuWrap">
+    <button class="btn-ghost" onclick="toggleFilterMenu()" id="filterMenuBtn">Filters ▾</button>
+    <div class="campaign-menu" id="filterMenu" style="display:none">
+      <div class="filter-menu-group"><div class="filter-menu-label">Bucket</div><div class="filter-chips" id="bucketChips"></div></div>
+      <div class="filter-menu-group"><div class="filter-menu-label">Variant</div><div class="filter-chips" id="variantChips"></div></div>
+      <div class="filter-menu-group"><div class="filter-menu-label">Status</div><div class="filter-chips" id="statusChips"></div></div>
+      <div class="filter-menu-group"><div class="filter-menu-label">View</div><button class="btn-ghost" onclick="toggleABView()" id="abToggle">A/B view: on</button></div>
+    </div>
+  </div>
   <div style="flex:1"></div>
   <button class="btn-ghost" onclick="resetOrder()" id="resetOrderBtn" style="display:none">Reset order</button>
-  <button class="btn-ghost" onclick="toggleABView()" id="abToggle">A/B view: on</button>
 </div>
 
 <div id="lastUpdated"></div>
@@ -557,6 +567,12 @@ function setHiddenCampaigns(set) {
 }
 function toggleCampaignMenu() {
   const m = document.getElementById('campaignMenu');
+  document.getElementById('filterMenu').style.display = 'none';
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function toggleFilterMenu() {
+  const m = document.getElementById('filterMenu');
+  document.getElementById('campaignMenu').style.display = 'none';
   m.style.display = m.style.display === 'none' ? 'block' : 'none';
 }
 function buildCampaignSelect() {
@@ -1209,9 +1225,10 @@ function openDetailFromReplies(campaignId) {
 }
 
 document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('campaignSelectWrap');
-  const menu = document.getElementById('campaignMenu');
-  if (wrap && menu && !wrap.contains(e.target)) menu.style.display = 'none';
+  const cWrap = document.getElementById('campaignSelectWrap');
+  if (cWrap && !cWrap.contains(e.target)) document.getElementById('campaignMenu').style.display = 'none';
+  const fWrap = document.getElementById('filterMenuWrap');
+  if (fWrap && !fWrap.contains(e.target)) document.getElementById('filterMenu').style.display = 'none';
 });
 
 if (!getKey()) {
