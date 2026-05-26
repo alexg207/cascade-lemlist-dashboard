@@ -304,6 +304,11 @@
   .filter-menu-group { padding: 8px; border-bottom: 1px solid var(--line); }
   .filter-menu-group:last-child { border-bottom: none; }
   .filter-menu-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--mute-2); font-weight: 600; margin-bottom: 6px; }
+  /* Needs follow-up */
+  .fup-status { font-size: 11px; color: var(--amber); font-weight: 600; }
+  tr.fup-done { opacity: 0.45; }
+  tr.fup-done .fup-status { color: var(--mute-2); text-decoration: line-through; }
+  tr.fup-done .rep-name { text-decoration: line-through; }
 </style>
 </head>
 <body>
@@ -1144,13 +1149,29 @@ function switchPage(page) {
   if (page === 'replies' && !repliesData) loadReplies();
 }
 
+let followupData = null;
+function getDoneFollowups() {
+  try { return new Set(JSON.parse(localStorage.getItem('cascade_followup_done') || '[]')); }
+  catch { return new Set(); }
+}
+function toggleFollowupDone(key) {
+  const done = getDoneFollowups();
+  if (done.has(key)) done.delete(key); else done.add(key);
+  localStorage.setItem('cascade_followup_done', JSON.stringify([...done]));
+  renderReplies();
+}
+
 async function loadReplies() {
   document.getElementById('repliesLoading').style.display = '';
   document.getElementById('repliesContent').style.display = 'none';
   try {
-    const res = await apiFetch(`${API}/replies`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    repliesData = await res.json();
+    const [rRes, fRes] = await Promise.all([
+      apiFetch(`${API}/replies`),
+      apiFetch(`${API}/needs-followup`),
+    ]);
+    if (!rRes.ok) throw new Error(`HTTP ${rRes.status}`);
+    repliesData = await rRes.json();
+    followupData = fRes.ok ? await fRes.json() : { followups: [] };
     renderReplies();
   } catch (e) {
     if (e.message !== 'Auth required') {
@@ -1170,11 +1191,19 @@ function renderReplies() {
   const counts = { all: all.length, email: 0, linkedin: 0 };
   all.forEach(r => { counts[r.replyType] = (counts[r.replyType] || 0) + 1; });
 
+  const openFupCount = ((followupData && followupData.followups) || []).filter(f => !getDoneFollowups().has(f.leadId || f.email)).length;
   const badge = document.getElementById('replyBadge');
-  badge.textContent = counts.all;
-  badge.classList.toggle('zero', counts.all === 0);
+  const badgeTotal = counts.all + openFupCount;
+  badge.textContent = badgeTotal;
+  badge.classList.toggle('zero', badgeTotal === 0);
 
   const filtered = repliesFilter === 'all' ? all : all.filter(r => r.replyType === repliesFilter);
+
+  const fups = (followupData && followupData.followups) || [];
+  const doneSet = getDoneFollowups();
+  const fupKey = (f) => f.leadId || f.email;
+  const openFups = fups.filter(f => !doneSet.has(fupKey(f)));
+  counts.followup = openFups.length;
 
   const chip = (key, label) => `<span class="chip ${repliesFilter === key ? 'active' : ''}" onclick="setRepliesFilter('${key}')">${label} <span class="count">${counts[key] || 0}</span></span>`;
 
@@ -1182,8 +1211,46 @@ function renderReplies() {
   const content = document.getElementById('repliesContent');
   content.style.display = '';
 
+  const filterBar = `<div class="replies-filters">
+      ${chip('all', 'All')}
+      ${chip('email', 'Email')}
+      ${chip('linkedin', 'LinkedIn')}
+      ${chip('followup', 'Needs follow-up')}
+    </div>`;
+
+  // ── Needs follow-up view ──
+  if (repliesFilter === 'followup') {
+    const sorted = [...fups].sort((a, b) => (doneSet.has(fupKey(a)) - doneSet.has(fupKey(b))));
+    const frows = sorted.map(f => {
+      const key = fupKey(f);
+      const done = doneSet.has(key);
+      const name = f.fullName || [f.firstName, f.lastName].filter(Boolean).join(' ') || '(unknown)';
+      return `<tr class="${done ? 'fup-done' : ''}">
+        <td><input type="checkbox" ${done ? 'checked' : ''} onchange="toggleFollowupDone('${key.replace(/'/g, "\\'")}')"></td>
+        <td><div class="rep-name">${name}</div>${f.email ? `<div class="rep-email">${f.email}</div>` : ''}</td>
+        <td class="rep-title">${f.jobTitle || '—'}</td>
+        <td class="rep-co">${f.company || '—'}</td>
+        <td><span class="fup-status">LI invite accepted · manual reply needed</span></td>
+        <td><span class="rep-campaign" onclick="openDetailFromReplies('${f.campaignId}')">${f.campaignName || '—'}</span></td>
+        <td>${f.linkedinUrl ? `<a href="${f.linkedinUrl}" target="_blank" style="color:var(--blue);font-size:11px">LI profile →</a>` : '<span style="color:var(--mute-2);font-size:11px">no LI</span>'}</td>
+        <td class="rep-date">${timeAgo(f.acceptedOn)}</td>
+      </tr>`;
+    }).join('');
+    content.innerHTML = `
+      <div class="replies-summary">
+        <span class="replies-count">${openFups.length}</span>
+        <span class="replies-label">accepted LinkedIn, awaiting manual reply${doneSet.size ? ` · ${[...doneSet].length} marked done` : ''}</span>
+      </div>
+      ${filterBar}
+      <table class="replies-table">
+        <thead><tr><th>Done</th><th>Name</th><th>Title</th><th>Company</th><th>Status</th><th>Campaign</th><th>LI</th><th>Accepted</th></tr></thead>
+        <tbody>${frows || '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--mute-2)">No accepted-but-unanswered LinkedIn invites. 🎉</td></tr>'}</tbody>
+      </table>`;
+    return;
+  }
+
   if (!all.length) {
-    content.innerHTML = `<div class="replies-empty">No replies yet across ${repliesData.totalCampaigns} campaigns.</div>`;
+    content.innerHTML = `<div class="replies-empty">No replies yet across ${repliesData.totalCampaigns} campaigns.</div>${filterBar}`;
     return;
   }
 
@@ -1205,11 +1272,7 @@ function renderReplies() {
       <span class="replies-count">${counts.all}</span>
       <span class="replies-label">replies across ${repliesData.totalCampaigns} campaigns</span>
     </div>
-    <div class="replies-filters">
-      ${chip('all', 'All')}
-      ${chip('email', 'Email')}
-      ${chip('linkedin', 'LinkedIn')}
-    </div>
+    ${filterBar}
     <table class="replies-table">
       <thead><tr><th>Type</th><th>Name</th><th>Title</th><th>Company</th><th>Campaign</th><th>LI</th><th>When</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--mute-2)">No replies match filter.</td></tr>'}</tbody>
