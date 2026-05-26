@@ -615,10 +615,10 @@ function renderSummary(cams) {
 
   document.getElementById('summary').innerHTML = `
     <div class="summary-card"><div class="label">Leads in flight</div><div class="value">${total.toLocaleString()}</div><div class="sub">${cams.length} campaigns</div></div>
-    <div class="summary-card"><div class="label">Touched</div><div class="value">${sent.toLocaleString()}</div><div class="sub">${pct(sent, total)} of universe</div></div>
+    <div class="summary-card"><div class="label">Touched</div><div class="value">${sent.toLocaleString()}</div><div class="sub">${pct(sent, total)} of all leads</div></div>
     <div class="summary-card"><div class="label">Reply rate</div><div class="value" style="color:var(--green)">${replyRate}</div><div class="sub">${replied} replies</div></div>
     <div class="summary-card"><div class="label">LI accepts</div><div class="value" style="color:var(--amber)">${liAcc}</div><div class="sub">${liAccRate} accept rate</div></div>
-    <div class="summary-card"><div class="label">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels before delivery. Open rate is systematically undercounted - use reply rate and LI accepts as primary signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div><div class="value" style="color:var(--mute-2)">${openRate}</div><div class="sub">pixel-blocked</div></div>
+    <div class="summary-card"><div class="label">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels before delivery. Open rate is systematically undercounted - use reply rate and LI accepts as primary signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div><div class="value" style="color:var(--mute-2)">${openRate}</div><div class="sub">likely undercounted</div></div>
     <div class="summary-card"><div class="label">LI replies</div><div class="value" style="color:var(--teal)">${liRep}</div></div>
   `;
 }
@@ -688,7 +688,7 @@ function renderCard(c) {
       </div>` : `<div class="hero-metric">
         <div class="hm-l">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels — opens are systematically undercounted. Reply rate and LI accepts are more reliable signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div>
         <div class="hm-n" style="color:var(--mute-2)">${s.sent ? openRate.toFixed(1) + '%' : '—'}</div>
-        <div class="hm-sub">${s.opened.toLocaleString()} opens · pixel-blocked</div>
+        <div class="hm-sub">${s.opened.toLocaleString()} opens · likely undercounted</div>
       </div>`}
     </div>
 
