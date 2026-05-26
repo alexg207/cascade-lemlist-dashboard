@@ -288,6 +288,17 @@
   .stat-box { background: var(--tint); border: 1px solid var(--line-2); border-radius: 6px; padding: 10px; text-align: center; }
   .stat-box .n { font-family: 'Geist', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
   .stat-box .l { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute-2); margin-top: 3px; font-weight: 600; }
+
+  /* Campaign select dropdown */
+  .campaign-select { position: relative; }
+  .campaign-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 340px; max-height: 380px; overflow-y: auto; padding: 8px; }
+  .campaign-menu-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mute-2); border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .campaign-menu-actions a { cursor: pointer; color: var(--blue); margin-left: 10px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .campaign-menu-actions a:hover { text-decoration: underline; }
+  .campaign-menu-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; color: var(--ink); }
+  .campaign-menu-row:hover { background: var(--tint); }
+  .campaign-menu-row input { cursor: pointer; flex-shrink: 0; }
+  .campaign-menu-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -333,6 +344,19 @@
   <div class="filter-chips" id="bucketChips"></div>
   <div class="filter-chips" id="variantChips"></div>
   <div class="filter-chips" id="statusChips"></div>
+  <div class="campaign-select" id="campaignSelectWrap">
+    <button class="btn-ghost" onclick="toggleCampaignMenu()" id="campaignSelectBtn">Campaigns ▾</button>
+    <div class="campaign-menu" id="campaignMenu" style="display:none">
+      <div class="campaign-menu-head">
+        <span>Show campaigns</span>
+        <span class="campaign-menu-actions">
+          <a onclick="setAllCampaigns(true)">All</a>
+          <a onclick="setAllCampaigns(false)">None</a>
+        </span>
+      </div>
+      <div id="campaignMenuList"></div>
+    </div>
+  </div>
   <div style="flex:1"></div>
   <button class="btn-ghost" onclick="resetOrder()" id="resetOrderBtn" style="display:none">Reset order</button>
   <button class="btn-ghost" onclick="toggleABView()" id="abToggle">A/B view: on</button>
@@ -436,7 +460,7 @@ function classify(c) {
   else if (/health\s*system|healthcare|hospital|amc|cfo|coo|finance\s*leader|health\s*sys/.test(n)) bucket = 'health-systems';
   else if (/pharma/.test(n)) bucket = 'pharma';
 
-  if (/advisory|alex|primary|portfolio|investor/.test(n)) { variant = 'advisory'; sender = 'Alex (Primary)'; }
+  if (/advisory|sam|alex|primary|portfolio|investor/.test(n)) { variant = 'advisory'; sender = 'Sam (Primary)'; }
   else if (/founder|direct|kate|cascade\s*(sender|outbound)/.test(n)) { variant = 'direct'; sender = 'Kate (Cascade)'; }
 
   if (/linkedin/.test(n) && /email/.test(n)) channel = 'multi';
@@ -454,7 +478,7 @@ const BUCKET_LABELS = {
   'pharma': 'Pharma',
   'other': 'Other',
 };
-const VARIANT_LABELS = { 'all': 'Both variants', 'direct': 'Direct (Kate)', 'advisory': 'Advisory (Alex)', 'other': 'Untagged' };
+const VARIANT_LABELS = { 'all': 'Both variants', 'direct': 'Direct (Kate)', 'advisory': 'Advisory (Sam)', 'other': 'Untagged' };
 const STATUS_LABELS = { 'all': 'All status', 'running': 'Running', 'paused': 'Paused', 'draft': 'Draft', 'ended': 'Ended' };
 
 function getStatus(c) { return (c.scheduleStatus || c.status || 'unknown').toLowerCase(); }
@@ -524,8 +548,44 @@ function setFilter(dim, key) {
   buildChips();
   render();
 }
+function getHiddenCampaigns() {
+  try { return new Set(JSON.parse(localStorage.getItem('cascade_hidden_campaigns') || '[]')); }
+  catch { return new Set(); }
+}
+function setHiddenCampaigns(set) {
+  localStorage.setItem('cascade_hidden_campaigns', JSON.stringify([...set]));
+}
+function toggleCampaignMenu() {
+  const m = document.getElementById('campaignMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function buildCampaignSelect() {
+  const hidden = getHiddenCampaigns();
+  const visibleCount = allCampaigns.filter(c => !hidden.has(c._id)).length;
+  document.getElementById('campaignSelectBtn').textContent = `Campaigns (${visibleCount}/${allCampaigns.length}) ▾`;
+  const rows = allCampaigns.map(c => {
+    const checked = hidden.has(c._id) ? '' : 'checked';
+    const nm = (c.name || 'Unnamed').replace(/"/g, '&quot;');
+    return `<label class="campaign-menu-row"><input type="checkbox" ${checked} onchange="toggleCampaignVisible('${c._id}')"> <span>${nm}</span></label>`;
+  }).join('');
+  document.getElementById('campaignMenuList').innerHTML = rows;
+}
+function toggleCampaignVisible(id) {
+  const hidden = getHiddenCampaigns();
+  if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+  setHiddenCampaigns(hidden);
+  buildCampaignSelect();
+  render();
+}
+function setAllCampaigns(visible) {
+  setHiddenCampaigns(visible ? new Set() : new Set(allCampaigns.map(c => c._id)));
+  buildCampaignSelect();
+  render();
+}
 function filtered() {
+  const hidden = getHiddenCampaigns();
   return allCampaigns.filter(c => {
+    if (hidden.has(c._id)) return false;
     const cls = classify(c);
     if (filters.bucket !== 'all' && cls.bucket !== filters.bucket) return false;
     if (filters.variant !== 'all' && cls.variant !== filters.variant) return false;
@@ -589,7 +649,7 @@ function renderABSection() {
       <div class="ab-split">
         ${sideHTML('direct', 'A · Direct (Kate)')}
         <div class="ab-vs">vs</div>
-        ${sideHTML('advisory', 'B · Advisory (Alex)')}
+        ${sideHTML('advisory', 'B · Advisory (Sam)')}
       </div>
       <div class="ab-winner">
         <span>Reply-rate edge</span>
@@ -889,6 +949,7 @@ function onCardDrop(e, targetId) {
 // ── Render ───────────────────────────────────────────────────────────────────
 function render() {
   buildChips();
+  buildCampaignSelect();
   const cams = sortCards(filtered());
   document.getElementById('campaignCount').textContent = `${cams.length} of ${allCampaigns.length} campaigns`;
   renderSummary(cams);
@@ -1146,6 +1207,12 @@ function openDetailFromReplies(campaignId) {
   switchPage('campaigns');
   openDetail(c._id, c.name || 'Unnamed', getStatus(c));
 }
+
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('campaignSelectWrap');
+  const menu = document.getElementById('campaignMenu');
+  if (wrap && menu && !wrap.contains(e.target)) menu.style.display = 'none';
+});
 
 if (!getKey()) {
   openGate();
