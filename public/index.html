@@ -733,7 +733,7 @@ function renderCard(c) {
 
   const hasLI = s.liInviteDone > 0 || cls.channel === 'linkedin' || cls.channel === 'multi';
   const liSection = hasLI ? `<div class="li-section">
-    ${funnelRow('LI sent', s.liInviteDone, s.liInviteDone, 'li-sent')}
+    ${funnelRow('LI sent', s.liInviteDone, s.total, 'li-sent')}
     ${funnelRow('LI accepts', s.liAccepted, s.liInviteDone, 'li-accepted')}
     ${funnelRow('LI replies', s.liReplied, s.liInviteDone, 'li-replied')}
   </div>` : '';
@@ -777,7 +777,7 @@ function renderCard(c) {
     <div class="funnel">
       <div class="funnel-head"><span class="ft">Email funnel</span><span class="fp">${s.sent.toLocaleString()} touched</span></div>
       <div class="funnel-rows">
-        ${funnelRow('Sent', s.sent, s.sent, 'sent')}
+        ${funnelRow('Sent', s.sent, s.total, 'sent')}
         ${funnelRow('Clicked', s.clicked, s.sent, 'clicked')}
         ${funnelRow('Replied', s.replied, s.sent, 'replied')}
         ${funnelRow('Bounced', s.bounced, s.sent, 'bounced')}
