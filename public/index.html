@@ -634,14 +634,14 @@ function renderABSection() {
     const data = {};
     for (const v of variants) {
       const cams = allCampaigns.filter(c => { const cl = classify(c); return cl.bucket === b && cl.variant === v; });
-      const agg = { sent: 0, opened: 0, replied: 0, total: 0, n: cams.length, sender: '' };
+      const agg = { sent: 0, bounced: 0, replied: 0, total: 0, n: cams.length, sender: '' };
       cams.forEach(c => {
         const s = extractStats(c);
-        agg.sent += s.sent; agg.opened += s.opened; agg.replied += s.replied; agg.total += s.total;
+        agg.sent += s.sent; agg.bounced += s.bounced; agg.replied += s.replied; agg.total += s.total;
         if (!agg.sender) agg.sender = classify(c).sender;
       });
       agg.replyRate = agg.sent ? agg.replied / agg.sent * 100 : 0;
-      agg.openRate = agg.sent ? agg.opened / agg.sent * 100 : 0;
+      agg.bounceRate = agg.sent ? agg.bounced / agg.sent * 100 : 0;
       data[v] = agg;
     }
     const noData = !data.direct.n && !data.advisory.n;
@@ -657,7 +657,7 @@ function renderABSection() {
         <div class="v-label"><span>${label}</span><span class="v-sender">${d.sender || ''} · ${d.n} camp</span></div>
         <div class="v-metrics">
           <div class="v-metric"><div class="vm-n">${d.replyRate.toFixed(1)}%</div><div class="vm-l">Reply rate</div></div>
-          <div class="v-metric"><div class="vm-n">${d.openRate.toFixed(1)}%</div><div class="vm-l">Open rate</div></div>
+          <div class="v-metric"><div class="vm-n">${d.bounceRate.toFixed(1)}%</div><div class="vm-l">Bounce rate</div></div>
           <div class="v-metric"><div class="vm-n">${d.replied}</div><div class="vm-l">Replies</div></div>
           <div class="v-metric"><div class="vm-n">${d.sent.toLocaleString()}</div><div class="vm-l">Touched</div></div>
         </div>
@@ -684,14 +684,15 @@ function renderABSection() {
 
 // ── Summary ──────────────────────────────────────────────────────────────────
 function renderSummary(cams) {
-  let total = 0, sent = 0, opened = 0, replied = 0, liDone = 0, liAcc = 0, liRep = 0;
+  let total = 0, sent = 0, bounced = 0, replied = 0, liDone = 0, liAcc = 0, liRep = 0;
   cams.forEach(c => {
     const s = extractStats(c);
-    total += s.total; sent += s.sent; opened += s.opened; replied += s.replied;
+    total += s.total; sent += s.sent; bounced += s.bounced; replied += s.replied;
     liDone += s.liInviteDone; liAcc += s.liAccepted; liRep += s.liReplied;
   });
   const replyRate = sent ? (replied / sent * 100).toFixed(1) + '%' : '—';
-  const openRate = sent ? (opened / sent * 100).toFixed(1) + '%' : '—';
+  const bounceRate = sent ? (bounced / sent * 100).toFixed(1) + '%' : '—';
+  const bounceColor = sent && (bounced / sent) > 0.05 ? 'var(--red)' : 'var(--ink)';
   const liAccRate = liDone ? (liAcc / liDone * 100).toFixed(0) + '%' : '—';
 
   document.getElementById('summary').innerHTML = `
@@ -699,7 +700,7 @@ function renderSummary(cams) {
     <div class="summary-card"><div class="label">Touched</div><div class="value">${sent.toLocaleString()}</div><div class="sub">${pct(sent, total)} of all leads</div></div>
     <div class="summary-card"><div class="label">Reply rate</div><div class="value" style="color:var(--green)">${replyRate}</div><div class="sub">${replied} replies</div></div>
     <div class="summary-card"><div class="label">LI accepts</div><div class="value" style="color:var(--amber)">${liAcc}</div><div class="sub">${liAccRate} accept rate</div></div>
-    <div class="summary-card"><div class="label">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels before delivery. Open rate is systematically undercounted - use reply rate and LI accepts as primary signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div><div class="value" style="color:var(--mute-2)">${openRate}</div><div class="sub">likely undercounted</div></div>
+    <div class="summary-card"><div class="label">Bounce rate <span title="Industry-healthy is <2%. Above 5% damages sender reputation. Drives domain warmup decisions and list-cleaning priority." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div><div class="value" style="color:${bounceColor}">${bounceRate}</div><div class="sub">${bounced} bounces</div></div>
     <div class="summary-card"><div class="label">LI replies</div><div class="value" style="color:var(--teal)">${liRep}</div></div>
   `;
 }
@@ -726,7 +727,7 @@ function renderCard(c) {
   const cls = classify(c);
   const s = extractStats(c);
   const replyRate = s.sent ? (s.replied / s.sent * 100) : 0;
-  const openRate = s.sent ? (s.opened / s.sent * 100) : 0;
+  const bounceRate = s.sent ? (s.bounced / s.sent * 100) : 0;
   const liAcceptRate = s.liInviteDone ? (s.liAccepted / s.liInviteDone * 100) : 0;
   const status = getStatus(c);
 
@@ -767,9 +768,9 @@ function renderCard(c) {
         <div class="hm-n" style="color:var(--blue)">${s.liInviteDone ? liAcceptRate.toFixed(1) + '%' : '—'}</div>
         <div class="hm-sub">${s.liAccepted} of ${s.liInviteDone} invites</div>
       </div>` : `<div class="hero-metric">
-        <div class="hm-l">Open rate <span title="Healthcare mail gateways (Proofpoint, Mimecast) strip tracking pixels — opens are systematically undercounted. Reply rate and LI accepts are more reliable signal." style="cursor:help;color:var(--mute-2);font-size:10px">ⓘ</span></div>
-        <div class="hm-n" style="color:var(--mute-2)">${s.sent ? openRate.toFixed(1) + '%' : '—'}</div>
-        <div class="hm-sub">${s.opened.toLocaleString()} opens · likely undercounted</div>
+        <div class="hm-l">Bounce rate</div>
+        <div class="hm-n" style="color:${s.sent && bounceRate > 5 ? 'var(--red)' : 'var(--ink)'}">${s.sent ? bounceRate.toFixed(1) + '%' : '—'}</div>
+        <div class="hm-sub">${s.bounced} of ${s.sent.toLocaleString()} sent</div>
       </div>`}
     </div>
 
@@ -777,7 +778,6 @@ function renderCard(c) {
       <div class="funnel-head"><span class="ft">Email funnel</span><span class="fp">${s.sent.toLocaleString()} touched</span></div>
       <div class="funnel-rows">
         ${funnelRow('Sent', s.sent, s.sent, 'sent')}
-        ${funnelRow('Opened', s.opened, s.sent, 'opened')}
         ${funnelRow('Clicked', s.clicked, s.sent, 'clicked')}
         ${funnelRow('Replied', s.replied, s.sent, 'replied')}
         ${funnelRow('Bounced', s.bounced, s.sent, 'bounced')}
@@ -1058,7 +1058,6 @@ async function loadDetail() {
       <div class="stats-grid">
         <div class="stat-box"><div class="n" style="color:#374151">${s.total.toLocaleString()}</div><div class="l">Leads</div></div>
         <div class="stat-box"><div class="n" style="color:#6b7280">${s.sent.toLocaleString()}</div><div class="l">Touched</div></div>
-        <div class="stat-box"><div class="n" style="color:var(--blue)">${s.opened.toLocaleString()}</div><div class="l">Opens</div></div>
         <div class="stat-box"><div class="n" style="color:var(--purple)">${s.clicked.toLocaleString()}</div><div class="l">Clicks</div></div>
         <div class="stat-box"><div class="n" style="color:var(--green)">${s.replied.toLocaleString()}</div><div class="l">Replies</div></div>
         <div class="stat-box"><div class="n" style="color:var(--red)">${s.bounced.toLocaleString()}</div><div class="l">Bounces</div></div>
