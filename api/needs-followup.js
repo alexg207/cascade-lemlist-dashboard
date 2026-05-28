@@ -58,7 +58,7 @@ module.exports = async (req, res) => {
           fullName: contact.fullName || `${a.leadFirstName || ''} ${a.leadLastName || ''}`.trim(),
           firstName: a.leadFirstName || contact.fields?.firstName || '',
           lastName: a.leadLastName || contact.fields?.lastName || '',
-          company: a.leadCompanyName || contact.fields?.companyName || contact.fields?.company || '',
+          company: a.leadCompanyName || contact.fields?.companyName || contact.fields?.company || contact.fields?.organization || a.leadOrganization || '',
           jobTitle: contact.fields?.jobTitle || '',
           linkedinUrl: contact.linkedinUrl || '',
         };
