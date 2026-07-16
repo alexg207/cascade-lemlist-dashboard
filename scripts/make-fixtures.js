@@ -115,7 +115,7 @@ function main() {
   const allReplies = [];
   const allFollowups = [];
   const meetings = [];
-  const leadIndex = {};
+  const leadIndex = { syncedAt: { $daysAgo: 0 }, campaigns: {}, byEmail: {}, byFirstName: {} };
 
   let leadCounter = 0;
   defs.forEach((def, ci) => {
@@ -160,7 +160,7 @@ function main() {
     const timeline = [];
     for (let d = days - 1; d >= 0; d--) {
       timeline.push({
-        day: `d-${d}`, // display-only label; charts use array order
+        day: { $daysAgo: d }, // rehydrated to an ISO date by lib/demo.js
         sent: int(0, 12), opened: int(0, 8), replied: int(0, 2), bounced: int(0, 1),
         liSent: int(0, 6), liAccepted: int(0, 3), liReplied: int(0, 1),
       });
@@ -212,7 +212,13 @@ function main() {
       externalEmails: [l.email], htmlLink: 'https://calendar.google.com/',
     }));
 
-    leads.forEach(l => { leadIndex[l.email] = { firstName: l.firstName, campaignId: def._id }; });
+    // Build the byEmail / byFirstName lead index used by the meetings matcher.
+    leads.forEach(l => {
+      const entry = { campaignId: def._id, leadId: l._id, state: l.state, firstName: l.firstName, lastName: l.lastName, fullName: l.fullName, company: l.company, email: l.email, jobTitle: l.jobTitle, linkedinUrl: l.linkedinUrl };
+      (leadIndex.byEmail[l.email.toLowerCase()] ||= []).push(entry);
+      (leadIndex.byFirstName[l.firstName.toLowerCase()] ||= []).push(entry);
+      (leadIndex.campaigns[def._id] ||= { leads: [] }).leads.push(entry);
+    });
   });
 
   writeJSON(path.join(FIX, 'campaigns.json'), campaignsOut);

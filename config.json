@@ -4,6 +4,8 @@
   "accentColor": "#134e4a",
   "storagePrefix": "cascade",
   "header": {
+    "brand": "Cascade Outbound",
+    "tag": "Lemlist analytics",
     "left": "Primary",
     "right": "Cascade Health"
   },
@@ -13,14 +15,48 @@
     "message": "Enter the shared access key from Alex to view live campaign data."
   },
   "buckets": [
-    { "key": "clinical-leaders", "label": "Clinical Leaders", "pill": "ot", "pattern": "clinical|hematolog|service\\s*line|bmt|cellular|cell\\s*therapy|cancer\\s*service" },
-    { "key": "community-onc", "label": "Community Onc", "pill": "co", "pattern": "community\\s*onc|comm\\s*onc|independent\\s*oncology|oncology\\s*practice|practice" },
-    { "key": "health-systems", "label": "Health Systems", "pill": "hs", "pattern": "health\\s*system|healthcare|hospital|amc|cfo|coo|finance\\s*leader|health\\s*sys" },
-    { "key": "pharma", "label": "Pharma", "pill": "ot", "pattern": "pharma" }
+    {
+      "key": "clinical-leaders",
+      "label": "Clinical Leaders",
+      "pill": "ot",
+      "pattern": "clinical|hematolog|service\\s*line|bmt|cellular|cell\\s*therapy|cancer\\s*service"
+    },
+    {
+      "key": "community-onc",
+      "label": "Community Onc",
+      "pill": "co",
+      "pattern": "community\\s*onc|comm\\s*onc|independent\\s*oncology|oncology\\s*practice|practice"
+    },
+    {
+      "key": "health-systems",
+      "label": "Health Systems",
+      "pill": "hs",
+      "pattern": "health\\s*system|healthcare|hospital|amc|cfo|coo|finance\\s*leader|health\\s*sys"
+    },
+    {
+      "key": "pharma",
+      "label": "Pharma",
+      "pill": "ot",
+      "pattern": "pharma"
+    }
   ],
   "variants": [
-    { "key": "advisory", "label": "Advisory (Sam)", "abLabel": "B · Advisory", "sender": "Sam (Primary)", "pattern": "advisory|sam|alex|primary|portfolio|investor" },
-    { "key": "direct", "label": "Direct (Kate)", "abLabel": "A · Direct", "sender": "Kate (Cascade)", "pattern": "founder|direct|kate|cascade\\s*(sender|outbound)" }
+    {
+      "key": "advisory",
+      "label": "Advisory (Sam)",
+      "ab": "b",
+      "abLabel": "B · Advisory",
+      "sender": "Sam (Primary)",
+      "pattern": "advisory|sam|alex|primary|portfolio|investor"
+    },
+    {
+      "key": "direct",
+      "label": "Direct (Kate)",
+      "ab": "a",
+      "abLabel": "A · Direct",
+      "sender": "Kate (Cascade)",
+      "pattern": "founder|direct|kate|cascade\\s*(sender|outbound)"
+    }
   ],
   "abComparison": {
     "enabled": true,
@@ -39,7 +75,20 @@
   },
   "headlineMetric": "replyRate",
   "extraLeadFields": [
-    { "key": "is340B", "label": "340B", "sources": ["is340B", "340B"] },
-    { "key": "bucket", "label": "Bucket", "sources": ["bucket"] }
+    {
+      "key": "is340B",
+      "label": "340B",
+      "sources": [
+        "is340B",
+        "340B"
+      ]
+    },
+    {
+      "key": "bucket",
+      "label": "Bucket",
+      "sources": [
+        "bucket"
+      ]
+    }
   ]
 }

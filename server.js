@@ -74,8 +74,8 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200);
     res.end(content);
   } catch {
-    res.writeHead(404);
     res.setHeader('Content-Type', 'application/json');
+    res.writeHead(404);
     res.end(JSON.stringify({ error: 'Not found' }));
   }
 });

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "demo": "DEMO_MODE=1 node server.js",
-    "fixtures": "node scripts/make-fixtures.js"
+    "fixtures": "node scripts/make-fixtures.js",
+    "check": "node scripts/check-inline-js.js"
   }
 }
