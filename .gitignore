@@ -1,6 +1,10 @@
-node_modules/
+node_modules
 .env
 .env.local
 .DS_Store
 *.log
 .vercel
+# demo-only (lives in the template, never the live instance)
+data/fixtures/
+public/meetings.json
+public/lead-index.json

@@ -1,9 +1,12 @@
 {
   "name": "cascade-lemlist-dashboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "engines": { "node": ">=18" },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "demo": "DEMO_MODE=1 node server.js",
+    "fixtures": "node scripts/make-fixtures.js",
+    "check": "node scripts/check-inline-js.js"
   }
 }
